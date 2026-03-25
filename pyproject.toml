@@ -1,0 +1,38 @@
+[project]
+name = "Parse-Documents-Fast"
+version = "0.1.0"
+description = "PDF handling and manipulation utilities"
+requires-python = ">=3.10"
+dependencies = [
+    "PyPDF2>=3.0.0",
+    "pdfplumber>=0.10.0",
+    "pypdf>=4.0.0",
+    "reportlab>=4.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "mypy>=1.0.0",
+    "ruff>=0.1.0",
+]
+ocr = [
+    "pytesseract>=0.3.10",
+    "Pillow>=10.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "black"
+
+[tool.ruff]
+line-length = 100
