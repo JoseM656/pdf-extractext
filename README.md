@@ -6,11 +6,13 @@ pdf_project/
 ├── src/
 │   ├── main.py      # Entry point
 │   ├── gui/          # GUI components
-│   └── ...
+│   ├── cli/          # CLI components
+|   └── pdf/          # logic
 ├── tests/           # Unit tests
 ├── config/          # Configuration
-├── data/            # Sample PDFs
 ├── output/          # Generated PDFs
-├── pyproject.toml
+├── pyproject.toml   # Dependences and libraries of the proyect
+├── CHANGELOG.md
+├── TODO.md
 └── .gitignore
 ```
