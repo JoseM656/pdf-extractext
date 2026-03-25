@@ -2,7 +2,7 @@
 PDF — Parse Documents Fast A lightweight tool that extracts plain text from PDF files.
 
 
-´´´
+```
 pdf-project/
 ├── src/pdf_project/
 │   ├── core/        # Funcionalidad principal (lectura, escritura, merge, split)
@@ -20,4 +20,4 @@ pdf-project/
 ├── logs/            # Archivos de log
 ├── pyproject.toml   # Dependencias
 └── .gitignore
-´´´
+```
