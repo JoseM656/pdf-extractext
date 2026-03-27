@@ -1,5 +1,5 @@
 # PDF — Parse Documents Fast
-Lightweight tool that extracts plain text from PDF files.
+University project - lightweight tool that extracts plain text from PDF files.
 
 ```
 pdf_project/
