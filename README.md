@@ -1,6 +1,28 @@
 # PDF — Parse Documents Fast
-University project - lightweight tool that extracts plain text from PDF files.
+Projecto universitario - herramienta ligera para pasar texto plano a PDF.
 
+## Tecnologias
+
+- Python
+- UV
+- IA
+- Opencode
+- MongoDB
+
+## Metodologias
+
+- TDD
+- Proyecto github
+- Los sies primeros principios de 12 factorAPP
+
+## Principios de programacion
+
+- KISS
+- DRY
+- YAGNI
+- SOLID
+
+### Directorio
 ```
 pdf_project/
 ├── src/
