@@ -1,6 +1,7 @@
 # uv
 uv.lock
 .gitignore
+.vsocde/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
