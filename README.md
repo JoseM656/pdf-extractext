@@ -24,16 +24,15 @@ Projecto universitario - herramienta ligera para pasar texto plano a PDF.
 
 ### Directorio
 ```
-pdf_project/
-├── src/
-│   ├── main.py      # Entry point
-│   ├── gui/          # GUI components
-│   ├── cli/          # CLI components
-|   └── pdf/          # logic
-├── tests/           # Unit tests
-├── config/          # Configuration
-├── output/          # Generated PDFs
-├── pyproject.toml   # Dependences and libraries of the proyect
+src/
+├── models/         # Modelos de datos y esquemas
+├── views/          # Endpoints y presentación
+├── controllers/   # Lógica de negocio
+├── main.py        # Entry point
+├── models.py      # Entidades de base de datos
+└── config.py      # Configuración
+├── tests/         # Pruebas unitarias
+├── pyproject.toml # Dependencias del proyecto
 ├── CHANGELOG.md
 ├── TODO.md
 └── .gitignore
