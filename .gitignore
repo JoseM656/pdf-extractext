@@ -217,3 +217,11 @@ __marimo__/
 output/*.pdf
 *.pdf
 logs/*.log
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Node
+node_modules/

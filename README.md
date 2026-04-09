@@ -25,8 +25,8 @@ Projecto universitario - herramienta ligera para pasar texto plano a PDF.
 ### Directorio
 ```
 src/
-├── models/         # Modelos de datos y esquemas
-├── views/          # Endpoints y presentación
+├── models/        # Modelos de datos y esquemas
+├── views/         # Endpoints y presentación
 ├── controllers/   # Lógica de negocio
 ├── main.py        # Entry point
 ├── models.py      # Entidades de base de datos
