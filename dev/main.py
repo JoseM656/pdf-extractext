@@ -6,9 +6,9 @@ from pathlib import Path
 import uuid
 from PyPDF2 import PdfReader
 
-from src.config import settings
-from src.database import engine, get_db, SessionLocal
-from src.models import Base, Pdf
+from dev.config import settings
+from dev.database import engine, get_db, SessionLocal
+from dev.models import Base, Pdf
 
 
 def create_app() -> FastAPI:
