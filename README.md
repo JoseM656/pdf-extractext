@@ -1,8 +1,8 @@
-# pdf-extracttext
+# pdf-extractext
 
 ## Descripción
 
-**pdf-extracttext** es una herramienta orientada a la extracción de texto desde documentos PDF utilizando técnicas de procesamiento y automatización.
+**pdf-extractext** es una herramienta orientada a la extracción de texto desde documentos PDF utilizando técnicas de procesamiento y automatización.
 
 El objetivo principal del proyecto es facilitar la obtención de información textual desde archivos PDF para su posterior análisis, almacenamiento o procesamiento mediante herramientas de inteligencia artificial.
 
@@ -64,7 +64,7 @@ A continuación se describe la estructura principal del repositorio:
 
 | Carpeta / Archivo | Descripción |
 |------------------|-------------|
-| `src/` | Código fuente principal del proyecto |
+| `dev/` | Código fuente principal del proyecto |
 | `tests/` | Pruebas automatizadas del sistema |
 | `docs/` | Documentación adicional del proyecto |
 | `README.md` | Documentación principal del repositorio |
