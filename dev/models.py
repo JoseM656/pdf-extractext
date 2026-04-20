@@ -1,16 +1,14 @@
-from sqlalchemy import Column, Integer, String, DateTime
-from sqlalchemy.orm import declarative_base
+from beanie import Document
 from datetime import datetime
+from pydantic import Field
 
-Base = declarative_base()
 
+class Pdf(Document):
+    title: str
+    description: str | None = None
+    path: str
+    size: int
+    created_at: datetime = Field(default_factory=datetime.utcnow)
 
-class Pdf(Base):
-    __tablename__ = "pdfs"
-
-    id = Column(Integer, primary_key=True, index=True)
-    title = Column(String, nullable=False)
-    description = Column(String, nullable=True)
-    path = Column(String, nullable=False)
-    size = Column(Integer, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    class Settings:
+        name = "pdfs"
