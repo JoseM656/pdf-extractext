@@ -1,8 +1,13 @@
+
 from pydantic_settings import BaseSettings
 
-settings = BaseSettings(
-    APP_NAME="PDF Manager",
-    VERSION="1.0.0",
-    DATABASE_URL="sqlite:///./pdf_manager.db",
-    UPLOAD_DIR="./uploads",
-)
+
+class Settings(BaseSettings):
+    APP_NAME: str = "PDF Manager"
+    VERSION: str = "1.0.0"
+    MONGO_URI: str = "mongodb://localhost:27017"
+    MONGO_DB_NAME: str = "pdf_manager"
+    UPLOAD_DIR: str = "./uploads"
+
+
+settings = Settings()
