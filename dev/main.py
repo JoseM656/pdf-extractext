@@ -18,7 +18,6 @@ async def lifespan(app: FastAPI):
     yield
     client.close()
 
-
 def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.APP_NAME,
@@ -33,6 +32,5 @@ def create_app() -> FastAPI:
     )
 
     return app
-
 
 app = create_app()
