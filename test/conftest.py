@@ -8,14 +8,9 @@ from pathlib import Path
 from typing import Generator
 
 import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, Session
 
 # Configurar PYTHONPATH para importar dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from dev.models import Base
 
 
 # Upload directory fixture
@@ -51,56 +46,3 @@ def sample_pdf_bytes() -> bytes:
         b"0000000101 00000 n\n0000000270 00000 n\n"
         b"trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n369\n%%EOF\n"
     )
-
-
-# FastAPI app fixture with overridden dependencies
-@pytest.fixture(scope="function")
-def client(temp_upload_dir: Path) -> Generator[TestClient, None, None]:
-    """Proporciona un TestClient con base de datos y directorio de uploads sobreescritos."""
-    from dev.models import Base as TestBase
-    from dev.config import settings
-
-    # Guardar valores originales
-    original_upload_dir = settings.UPLOAD_DIR
-
-    # Override settings
-    settings.UPLOAD_DIR = str(temp_upload_dir)
-
-    # Crear motor de base de datos en memoria
-    test_engine = create_engine(
-        "sqlite:///:memory:", connect_args={"check_same_thread": False}
-    )
-    TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
-    TestBase.metadata.create_all(bind=test_engine)
-
-    # Función para obtener sesión de BD de prueba
-    def get_test_db():
-        db = TestSessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
-
-    # Importar el módulo main y crear la app manualmente
-    from dev.main import create_app
-    from dev import database
-
-    # Sobrescribir el engine en el módulo database
-    original_engine = database.engine
-    database.engine = test_engine
-
-    # Crear la aplicación (esto usará el engine modificado)
-    app = create_app()
-
-    # Sobrescribir la dependencia get_db usando dependency_overrides
-    from dev.database import get_db
-
-    app.dependency_overrides[get_db] = get_test_db
-
-    with TestClient(app) as test_client:
-        yield test_client
-
-    # Cleanup: restaurar valores originales
-    database.engine = original_engine
-    settings.UPLOAD_DIR = original_upload_dir
-    TestBase.metadata.drop_all(bind=test_engine)

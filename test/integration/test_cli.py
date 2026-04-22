@@ -22,7 +22,7 @@ class TestCliArguments:
 
         # Act & Assert: El CLI debe ejecutarse sin error de argumentos
         result = subprocess.run(
-            [sys.executable, "-m", "dev.cli", str(pdf_file)],
+            [sys.executable, "-m", "dev.main", str(pdf_file)],
             capture_output=True,
             text=True,
         )
@@ -46,7 +46,7 @@ class TestPdfStorage:
 
         # Act: Ejecutar CLI que debería guardar en MongoDB
         result = subprocess.run(
-            [sys.executable, "-m", "dev.cli", str(pdf_file)],
+            [sys.executable, "-m", "dev.main", str(pdf_file)],
             capture_output=True,
             text=True,
         )
@@ -79,7 +79,7 @@ class TestPdfToText:
 
         # Act: Ejecutar CLI
         result = subprocess.run(
-            [sys.executable, "-m", "dev.cli", str(pdf_file)],
+            [sys.executable, "-m", "dev.main", str(pdf_file)],
             capture_output=True,
             text=True,
         )
