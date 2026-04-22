@@ -3,8 +3,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from beanie import init_beanie
 
-from dev.server.config import settings
-from dev.server.models.database import get_client
+from dev.config import settings
+from dev.servers.models.database import get_client
 from dev.models import Pdf
 
 
@@ -34,3 +34,20 @@ def create_app() -> FastAPI:
     return app
 
 app = create_app()
+
+
+def main() -> int:
+    """Entry-point principal del programa.
+
+    Llama al CLI para procesar PDFs desde línea de comandos.
+    """
+    import sys
+    from dev.cli import main as cli_main
+
+    return cli_main()
+
+
+if __name__ == "__main__":
+    import sys
+
+    sys.exit(main())
