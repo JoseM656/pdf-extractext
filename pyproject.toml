@@ -1,9 +1,13 @@
 [project]
 name = "pdf-manager"
-version = "1.0.0"
+version = "0.1.0"
 description = "API para gestión de documentos PDF"
 readme = "README.md"
 requires-python = ">=3.12"
+
+[project.scripts]
+fast-pdf = "dev.cli:main"
+
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
@@ -13,6 +17,9 @@ dependencies = [
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "pypdf2>=3.0.0",
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "httpx>=0.28.1",
 ]
 
 [project.optional-dependencies]
