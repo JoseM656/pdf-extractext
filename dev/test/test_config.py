@@ -1,7 +1,7 @@
 """Tests para el módulo de configuración."""
 
 import pytest
-from dev.config import settings
+from dev.servers.config import settings
 
 
 class TestConfig:
@@ -17,10 +17,15 @@ class TestConfig:
         assert settings.VERSION is not None
         assert settings.VERSION == "1.0.0"
 
-    def test_settings_database_url_is_defined(self):
-        """La aplicación tiene una URL de base de datos configurada."""
-        assert settings.DATABASE_URL is not None
-        assert "sqlite" in settings.DATABASE_URL.lower()
+    def test_settings_mongo_uri_is_defined(self):
+        """La aplicación tiene una URI de MongoDB configurada."""
+        assert settings.MONGO_URI is not None
+        assert "mongodb" in settings.MONGO_URI.lower()
+
+    def test_settings_mongo_db_name_is_defined(self):
+        """La aplicación tiene un nombre de base de datos configurado."""
+        assert settings.MONGO_DB_NAME is not None
+        assert settings.MONGO_DB_NAME == "pdf_manager"
 
     def test_settings_upload_dir_is_defined(self):
         """La aplicación tiene un directorio de uploads configurado."""

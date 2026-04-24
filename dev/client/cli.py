@@ -14,7 +14,7 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from dev.config import settings
-from dev.controllers import PdfExtractor
+from dev.servers.controllers import PdfExtractor
 
 
 def _is_pdf_file(file_path: Path) -> bool:
