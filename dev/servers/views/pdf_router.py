@@ -6,7 +6,7 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
-from dev.servers.config import settings
+from dev.config import settings
 from dev.servers.controllers import pdf_controller
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
