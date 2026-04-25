@@ -1,7 +1,7 @@
 """Tests para el módulo de configuración."""
 
 import pytest
-from dev.servers.config import settings
+from dev.config import settings
 
 
 class TestConfig:
