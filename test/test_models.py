@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from dev.servers.models.pdf_document import Pdf
+from dev.models.pdf_document import Pdf
 
 
 class TestPdfDocument:
