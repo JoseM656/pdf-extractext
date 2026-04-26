@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from dev.servers.services.pdf_extractor import PdfExtractor
-from dev.servers.models.pdf_document import Pdf
+from dev.models.pdf_document import Pdf
 
 
 async def create_pdf(title: str, description: str | None, path: str, size: int) -> Pdf:

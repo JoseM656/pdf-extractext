@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from beanie import init_beanie
 
 from dev.config import settings
-from dev.servers.models.database import get_client
-from dev.servers.models.pdf_document import Pdf
+from dev.models.database import get_client
+from dev.models.pdf_document import Pdf
 from dev.servers.views.pdf_router import router
 
 """
