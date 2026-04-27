@@ -1,5 +1,6 @@
-"""Controller para extracción de texto de PDFs."""
+"""Servicio de extracción de texto de PDFs."""
 
+import io
 from pathlib import Path
 
 from PyPDF2 import PdfReader
@@ -8,22 +9,29 @@ from PyPDF2 import PdfReader
 class PdfExtractor:
     """Extrae texto de archivos PDF.
 
-    Esta clase encapsula la lógica de extracción de texto
-    usando pypdf2 como motor de extracción.
+    Acepta tanto rutas en disco (Path) como contenido en memoria (bytes),
+    para poder procesar PDFs sin necesidad de escribirlos temporalmente a disco.
     """
 
-    def extract_text(self, pdf_path: Path) -> str:
-        """Extrae todo el texto de un archivo PDF.
+    def extract_text(self, source: Path | bytes) -> str:
+        """Extrae todo el texto de un PDF.
 
         Args:
-            pdf_path: Ruta al archivo PDF.
+            source: Ruta al archivo PDF (Path) o contenido binario del PDF (bytes).
 
         Returns:
             String con el contenido textual del PDF.
             Retorna string vacío si no hay texto o hay error.
         """
         try:
-            reader = PdfReader(str(pdf_path))
+            # Si recibimos bytes, los envolvemos en BytesIO para que PyPDF2
+            # pueda leerlos como si fuera un archivo, sin tocar el disco.
+            if isinstance(source, bytes):
+                file_like = io.BytesIO(source)
+            else:
+                file_like = str(source)
+
+            reader = PdfReader(file_like)
             text_parts = []
 
             for page in reader.pages:

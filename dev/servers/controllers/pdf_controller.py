@@ -1,26 +1,55 @@
 """Lógica de negocio para gestión de documentos PDF — capa de controladores."""
 
-from pathlib import Path
-
-from dev.servers.services.pdf_extractor import PdfExtractor
 from dev.models.pdf_document import Pdf
 
 
-async def create_pdf(title: str, description: str | None, path: str, size: int) -> Pdf:
+async def create_pdf(
+    title: str,
+    description: str | None,
+    path: str,
+    size: int,
+    extracted_text: str | None = None,
+    checksum: str | None = None,
+) -> Pdf:
     """Crea y persiste un documento PDF en la base de datos.
 
     Args:
         title: Título del documento.
         description: Descripción opcional.
-        path: Ruta física donde fue guardado el archivo.
+        path: Identificador de origen del archivo (puede ser una ruta o un URI descriptivo).
         size: Tamaño del archivo en bytes.
+        extracted_text: Texto ya extraído del PDF. Se persiste junto al documento
+            para no requerir el archivo original en lecturas posteriores.
+        checksum: Hash SHA-256 del contenido binario. Se usa para detectar duplicados.
 
     Returns:
         El documento Pdf recién creado y persistido.
     """
-    pdf = Pdf(title=title, description=description, path=path, size=size)
+    pdf = Pdf(
+        title=title,
+        description=description,
+        path=path,
+        size=size,
+        extracted_text=extracted_text,
+        checksum=checksum,
+    )
     await pdf.insert()
     return pdf
+
+
+async def get_pdf_by_checksum(checksum: str) -> Pdf | None:
+    """Busca un PDF por su checksum SHA-256.
+
+    Se usa para detectar duplicados antes de persistir un nuevo documento.
+    Si retorna un documento, significa que el contenido ya fue subido anteriormente.
+
+    Args:
+        checksum: Hash SHA-256 del contenido binario a buscar.
+
+    Returns:
+        El documento Pdf existente, o None si no hay duplicado.
+    """
+    return await Pdf.find_one(Pdf.checksum == checksum)
 
 
 async def list_pdfs() -> list[Pdf]:
@@ -51,7 +80,10 @@ async def get_pdf(pdf_id: str) -> Pdf:
 
 
 async def delete_pdf(pdf_id: str) -> None:
-    """Elimina un PDF de la base de datos y su archivo físico.
+    """Elimina un PDF de la base de datos.
+
+    Como los archivos ya no se persisten en disco, solo se elimina
+    el documento de MongoDB.
 
     Args:
         pdf_id: Identificador único del documento a eliminar.
@@ -63,18 +95,23 @@ async def delete_pdf(pdf_id: str) -> None:
     if pdf is None:
         raise ValueError(f"PDF con id '{pdf_id}' no encontrado")
 
-    Path(pdf.path).unlink(missing_ok=True)
+    # Solo eliminamos el registro de la base de datos.
+    # No hay archivo físico que borrar porque el procesamiento es en memoria.
     await pdf.delete()
 
 
 async def extract_text(pdf_id: str) -> dict:
-    """Extrae el contenido textual de un PDF existente.
+    """Retorna el texto extraído de un PDF desde la base de datos.
+
+    El texto fue extraído y persistido en el momento del upload,
+    por lo que esta operación es una simple lectura de MongoDB.
+    No requiere acceso al archivo original.
 
     Args:
         pdf_id: Identificador único del documento.
 
     Returns:
-        Diccionario con la clave 'text' conteniendo el texto extraído.
+        Diccionario con 'pdf_id' y 'text' con el texto extraído.
 
     Raises:
         ValueError: Si no existe un PDF con ese ID.
@@ -83,6 +120,7 @@ async def extract_text(pdf_id: str) -> dict:
     if pdf is None:
         raise ValueError(f"PDF con id '{pdf_id}' no encontrado")
 
-    extractor = PdfExtractor()
-    text = extractor.extract_text(Path(pdf.path))
-    return {"text": text}
+    return {
+        "pdf_id": pdf_id,
+        "text": pdf.extracted_text or "",
+    }
