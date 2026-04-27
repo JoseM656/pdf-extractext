@@ -15,6 +15,7 @@ from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
 
 from dev.config import settings
 from dev.servers.controllers import PdfExtractor
+from dev.servers.services.pdf_validator import PdfValidationError, validate_pdf_path
 
 
 def _is_pdf_file(file_path: Path) -> bool:
@@ -75,6 +76,9 @@ async def process_pdf(pdf_path: Path) -> Path:
 def _validate_pdf_path(pdf_path: Path) -> str | None:
     """Valida que la ruta sea un PDF válido.
 
+    Primero verifica existencia y extensión (rápido, sin I/O extra),
+    luego delega al validador centralizado que comprueba magic bytes y tamaño.
+
     Args:
         pdf_path: Ruta a validar.
 
@@ -85,6 +89,13 @@ def _validate_pdf_path(pdf_path: Path) -> str | None:
         return f"El archivo '{pdf_path}' no existe"
     if not _is_pdf_file(pdf_path):
         return f"El archivo '{pdf_path}' no es un PDF"
+
+    # Validación de formato real (magic bytes) y tamaño máximo
+    try:
+        validate_pdf_path(pdf_path)
+    except PdfValidationError as e:
+        return str(e)
+
     return None
 
 

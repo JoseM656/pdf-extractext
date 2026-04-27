@@ -1,13 +1,13 @@
 """Router FastAPI — capa de presentación del servidor (HTTP)."""
 
-import shutil
-from pathlib import Path
+import hashlib
 
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
-from dev.config import settings
 from dev.servers.controllers import pdf_controller
+from dev.servers.services.pdf_extractor import PdfExtractor
+from dev.servers.services.pdf_validator import PdfValidationError, validate_pdf_bytes
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
 
@@ -40,22 +40,52 @@ async def create_pdf(
     title: str = Form(""),
     description: str | None = Form(None),
 ):
-    """Sube un archivo PDF y lo registra en la base de datos."""
-    upload_dir = Path(settings.UPLOAD_DIR)
-    upload_dir.mkdir(parents=True, exist_ok=True)
+    """Sube un archivo PDF, lo valida, extrae su texto y lo registra en la base de datos.
 
-    dest = upload_dir / file.filename
-    with dest.open("wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    El archivo NO se persiste en disco en ningún momento: se lee a memoria,
+    se valida, se extrae el texto y solo ese resultado se guarda en MongoDB.
+    Retorna HTTP 409 si el contenido del archivo ya fue subido anteriormente.
+    """
+    # Leer el contenido completo en memoria de una sola vez.
+    content: bytes = await file.read()
+
+    # Validar formato real (magic bytes %PDF-) y tamaño máximo.
+    try:
+        validate_pdf_bytes(content, file.filename or "")
+    except PdfValidationError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    # Calcular el checksum SHA-256 del contenido binario.
+    # Es la huella digital del archivo: dos archivos con el mismo hash
+    # tienen exactamente el mismo contenido, sin importar el nombre.
+    checksum = hashlib.sha256(content).hexdigest()
+
+    # Verificar duplicado antes de cualquier procesamiento costoso.
+    # Si el checksum ya existe en la base de datos, el archivo fue subido antes.
+    existing = await pdf_controller.get_pdf_by_checksum(checksum)
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "Este documento ya fue subido anteriormente.",
+                "existing_id": str(existing.id),
+            },
+        )
+
+    # Extraer el texto mientras los bytes están en memoria.
+    extractor = PdfExtractor()
+    extracted_text = extractor.extract_text(content)
 
     used_title = title or file.filename
-    size = dest.stat().st_size
+    size = len(content)
 
     pdf = await pdf_controller.create_pdf(
         title=used_title,
         description=description,
-        path=str(dest),
+        path=f"memory://{file.filename}",
         size=size,
+        extracted_text=extracted_text,
+        checksum=checksum,
     )
     return _to_response(pdf)
 
@@ -79,7 +109,7 @@ async def get_pdf(pdf_id: str):
 
 @router.delete("/{pdf_id}", status_code=204)
 async def delete_pdf(pdf_id: str):
-    """Elimina un PDF y su archivo físico."""
+    """Elimina un PDF de la base de datos."""
     try:
         await pdf_controller.delete_pdf(pdf_id)
     except ValueError as e:

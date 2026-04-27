@@ -55,3 +55,41 @@ class TestPdfDocument:
         """El campo size es obligatorio."""
         with pytest.raises(Exception):
             Pdf(title="Test PDF", path="/uploads/test.pdf")
+
+    # --- Tests para campos agregados en issues #15 y #12 ---
+
+    def test_pdf_extracted_text_is_optional(self):
+        """El campo extracted_text es opcional y por defecto None."""
+        pdf = Pdf(title="Test PDF", path="/uploads/test.pdf", size=1024)
+
+        assert pdf.extracted_text is None
+
+    def test_pdf_extracted_text_can_be_set(self):
+        """El campo extracted_text puede almacenar texto extraído."""
+        pdf = Pdf(
+            title="Test PDF",
+            path="/uploads/test.pdf",
+            size=1024,
+            extracted_text="Contenido del PDF extraído",
+        )
+
+        assert pdf.extracted_text == "Contenido del PDF extraído"
+
+    def test_pdf_checksum_is_optional(self):
+        """El campo checksum es opcional y por defecto None."""
+        pdf = Pdf(title="Test PDF", path="/uploads/test.pdf", size=1024)
+
+        assert pdf.checksum is None
+
+    def test_pdf_checksum_can_be_set(self):
+        """El campo checksum puede almacenar un hash SHA-256."""
+        sha256_hash = "a" * 64  # SHA-256 produce 64 caracteres hexadecimales
+        pdf = Pdf(
+            title="Test PDF",
+            path="/uploads/test.pdf",
+            size=1024,
+            checksum=sha256_hash,
+        )
+
+        assert pdf.checksum == sha256_hash
+        assert len(pdf.checksum) == 64
