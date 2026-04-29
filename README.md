@@ -1,5 +1,11 @@
 # pdf-extractext
 
+## Integrantes
+
+**Tomás Faure  | 10823**
+**José Morata  | 10877**
+**Braian Rojas | 10922**
+
 ## Descripción
 
 **pdf-extractext** es una herramienta orientada a la extracción de texto desde documentos PDF utilizando técnicas de procesamiento y automatización.
@@ -14,6 +20,89 @@ Este proyecto busca resolver problemas comunes como:
 - Integrar extracción de información con bases de datos
 
 ---
+
+## Requisitos previos
+
+El programa se inicia levantando mongoDB en docker y en una terminal aparte fastAPI.
+
+- Python 3.12
+- uv
+- Docker
+
+---
+
+## Instalación
+
+```bash
+uv sync
+```
+
+---
+
+### Cómo levantar el proyecto
+
+#### 1. Base de datos (MongoDB)
+
+La primera vez, crear el contenedor:
+
+```bash
+docker run -d --name mongodb-pdf -p 27017:27017 mongo:7
+```
+
+Las veces siguientes, si el contenedor ya existe, solo iniciarlo:
+
+```bash
+docker start mongodb-pdf
+```
+
+> El contenedor conserva los datos entre sesiones. Solo usar `docker rm mongodb-pdf`
+> si querés eliminar todos los documentos y empezar desde cero.
+
+#### 2. API (terminal separada)
+
+```bash
+uv run uvicorn dev.servers.app:app --reload
+```
+
+Dejar esta terminal abierta mientras se usa el CLI.
+
+#### 3. CLI
+
+```bash
+# Subir un PDF
+uv run fast-pdf upload ruta/al/archivo.pdf
+
+# Subir y ver detalles
+uv run fast-pdf upload ruta/al/archivo.pdf --info
+
+# Listar documentos
+uv run fast-pdf list
+
+# Ver texto extraído
+uv run fast-pdf get <id>
+
+# Eliminar un documento
+uv run fast-pdf delete <id>
+```
+
+#### Detener el proyecto
+
+```bash
+# Detener MongoDB (conserva los datos)
+docker stop mongodb-pdf
+
+# Eliminar el contenedor y todos sus datos (opcional)
+docker rm mongodb-pdf
+```
+
+## Makefile
+
+make mongo   → levanta el contenedor de MongoDB
+make server  → inicia la API con uvicorn
+make start   → Iniciar el contenedor una vez ya creado 
+make stop    → detiene y el contenedor de MongoDB
+make remove  → borra el contenedor (elimina los datos de las sesiones)
+make install → ejecuta uv sync
 
 ## Arquitectura
 
@@ -66,10 +155,11 @@ A continuación se describe la estructura principal del repositorio:
 |------------------|-------------|
 | `dev/` | Código fuente principal del proyecto |
 | `tests/` | Pruebas automatizadas del sistema |
-| `docs/` | Documentación adicional del proyecto |
+| `upload` | Zonas de pruebas |
 | `README.md` | Documentación principal del repositorio |
-| `requirements.txt` / `pyproject.toml` | Dependencias del proyecto |
+| `pyproject.toml` | Dependencias del proyecto |
 | `.gitignore` | Archivos ignorados por Git |
+| `Makefile` | Archivo Makefile para la automatización | 
 
 Esta organización permite mantener una separación clara entre código, pruebas y documentación.
 
