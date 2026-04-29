@@ -31,3 +31,12 @@ class TestConfig:
         """La aplicación tiene un directorio de uploads configurado."""
         assert settings.UPLOAD_DIR is not None
         assert settings.UPLOAD_DIR == "./uploads"
+
+    def test_settings_api_base_url_is_defined(self):
+        """La aplicación tiene una URL base de API configurada."""
+        assert settings.API_BASE_URL is not None
+        assert settings.API_BASE_URL.startswith("http")
+
+    def test_settings_api_base_url_default_is_localhost(self):
+        """La URL base por defecto apunta a localhost:8000."""
+        assert "localhost:8000" in settings.API_BASE_URL

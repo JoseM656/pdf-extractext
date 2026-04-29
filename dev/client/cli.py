@@ -1,140 +1,290 @@
 """
 CLI entry-point para fast-pdf.
 
-Uso: fast-pdf archivo.pdf
+El CLI actúa como cliente HTTP delgado de la API FastAPI.
+Toda la lógica de negocio (validación, extracción, checksum, persistencia)
+vive en el servidor — el CLI solo serializa argumentos y muestra respuestas.
+
+Uso:
+    fast-pdf upload archivo.pdf
+    fast-pdf upload archivo.pdf --info
+    fast-pdf list
+    fast-pdf get <id>
+    fast-pdf delete <id>
 """
 
 import argparse
-import asyncio
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
+import httpx
 
 from dev.config import settings
-from dev.servers.controllers import PdfExtractor
-from dev.servers.services.pdf_validator import PdfValidationError, validate_pdf_path
+
+# Endpoint base de la API. Se construye una sola vez y se reutiliza en todos
+# los comandos para evitar repetir la URL en cada función.
+_API_PDFS = f"{settings.API_BASE_URL}/api/pdfs"
 
 
-def _is_pdf_file(file_path: Path) -> bool:
-    """Verifica si un archivo tiene extensión PDF."""
-    return file_path.suffix.lower() == ".pdf"
+# ---------------------------------------------------------------------------
+# Handlers de cada subcomando
+# ---------------------------------------------------------------------------
 
+def _cmd_upload(args: argparse.Namespace) -> int:
+    """Sube un archivo PDF a la API.
 
-async def save_pdf_to_mongodb(pdf_path: Path) -> str | None:
-    """Guarda la información del PDF en MongoDB.
-
-    Args:
-        pdf_path: Ruta al archivo PDF.
-
-    Returns:
-        ID del documento insertado, o None si falló la conexión.
-    """
-    try:
-        client = AsyncIOMotorClient(settings.MONGO_URI)
-        db = client[settings.MONGO_DB_NAME]
-        pdfs_collection = db["pdfs"]
-
-        pdf_document = {
-            "filename": pdf_path.name,
-            "path": str(pdf_path),
-            "size": pdf_path.stat().st_size,
-            "created_at": datetime.now(timezone.utc),
-        }
-
-        result = await pdfs_collection.insert_one(pdf_document)
-        client.close()
-
-        return str(result.inserted_id)
-    except (ConnectionFailure, ServerSelectionTimeoutError):
-        return None
-
-
-async def process_pdf(pdf_path: Path) -> Path:
-    """Procesa un archivo PDF y genera un archivo .txt.
+    Delega en el servidor toda la lógica: validación de formato, magic bytes,
+    tamaño, detección de duplicados por checksum y extracción de texto.
 
     Args:
-        pdf_path: Ruta al archivo PDF.
+        args: Namespace con 'pdf_file' (Path) y 'info' (bool).
 
     Returns:
-        Ruta al archivo .txt generado.
+        Código de salida (0 = éxito, 1 = error).
     """
-    await save_pdf_to_mongodb(pdf_path)
+    pdf_path: Path = args.pdf_file
 
-    # Extraer texto usando el controller
-    extractor = PdfExtractor()
-    text = extractor.extract_text(pdf_path)
-
-    output_path = pdf_path.with_suffix(".txt")
-    output_path.write_text(text)
-
-    return output_path
-
-
-def _validate_pdf_path(pdf_path: Path) -> str | None:
-    """Valida que la ruta sea un PDF válido.
-
-    Primero verifica existencia y extensión (rápido, sin I/O extra),
-    luego delega al validador centralizado que comprueba magic bytes y tamaño.
-
-    Args:
-        pdf_path: Ruta a validar.
-
-    Returns:
-        Mensaje de error, o None si es válido.
-    """
     if not pdf_path.exists():
-        return f"El archivo '{pdf_path}' no existe"
-    if not _is_pdf_file(pdf_path):
-        return f"El archivo '{pdf_path}' no es un PDF"
+        print(f"Error: El archivo '{pdf_path}' no existe.", file=sys.stderr)
+        return 1
 
-    # Validación de formato real (magic bytes) y tamaño máximo
     try:
-        validate_pdf_path(pdf_path)
-    except PdfValidationError as e:
-        return str(e)
+        with pdf_path.open("rb") as f:
+            response = httpx.post(
+                _API_PDFS,
+                files={"file": (pdf_path.name, f, "application/pdf")},
+                data={"title": pdf_path.stem},
+            )
 
-    return None
+        # 409 Conflict: el servidor detectó un duplicado por checksum
+        if response.status_code == 409:
+            detail = response.json().get("detail", {})
+            existing_id = detail.get("existing_id", "desconocido")
+            print(
+                f"Duplicado detectado: este PDF ya fue subido anteriormente.\n"
+                f"ID del documento existente: {existing_id}"
+            )
+            return 1
+
+        # 400 Bad Request: validación fallida (magic bytes, tamaño, etc.)
+        if response.status_code == 400:
+            detail = response.json().get("detail", response.text)
+            print(f"Error de validación: {detail}", file=sys.stderr)
+            return 1
+
+        response.raise_for_status()
+        data = response.json()
+
+        print(f"PDF subido exitosamente.")
+        print(f"  ID:    {data['id']}")
+        print(f"  Título: {data['title']}")
+
+        # --info muestra además tamaño y fecha
+        if args.info:
+            print(f"  Tamaño: {data['size']} bytes")
+            print(f"  Fecha:  {data['created_at']}")
+
+        return 0
+
+    except httpx.ConnectError:
+        print(
+            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.\n"
+            f"Verificá que el servidor esté corriendo.",
+            file=sys.stderr,
+        )
+        return 1
+    except httpx.HTTPStatusError as e:
+        print(f"Error del servidor: {e.response.status_code}", file=sys.stderr)
+        return 1
 
 
-def _parse_arguments() -> Path:
-    """Parsea los argumentos de línea de comandos.
+def _cmd_list(_args: argparse.Namespace) -> int:
+    """Lista todos los PDFs persistidos en el servidor.
 
     Returns:
-        Ruta al archivo PDF.
+        Código de salida (0 = éxito, 1 = error).
+    """
+    try:
+        response = httpx.get(_API_PDFS)
+        response.raise_for_status()
+        pdfs = response.json()
+
+        if not pdfs:
+            print("No hay documentos registrados.")
+            return 0
+
+        print(f"{'ID':<26} {'Título':<30} {'Tamaño':>10}  {'Fecha'}")
+        print("-" * 80)
+        for pdf in pdfs:
+            print(
+                f"{pdf['id']:<26} "
+                f"{pdf['title'][:28]:<30} "
+                f"{pdf['size']:>10} bytes  "
+                f"{pdf['created_at'][:19]}"
+            )
+        return 0
+
+    except httpx.ConnectError:
+        print(
+            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
+            file=sys.stderr,
+        )
+        return 1
+
+
+def _cmd_get(args: argparse.Namespace) -> int:
+    """Muestra el texto extraído de un PDF por su ID.
+
+    Args:
+        args: Namespace con 'pdf_id' (str).
+
+    Returns:
+        Código de salida (0 = éxito, 1 = error).
+    """
+    try:
+        response = httpx.get(f"{_API_PDFS}/{args.pdf_id}/text")
+
+        if response.status_code == 404:
+            print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
+            return 1
+
+        response.raise_for_status()
+        data = response.json()
+        text = data.get("text", "")
+
+        if not text:
+            print("El documento no contiene texto extraíble.")
+        else:
+            print(text)
+
+        return 0
+
+    except httpx.ConnectError:
+        print(
+            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
+            file=sys.stderr,
+        )
+        return 1
+
+
+def _cmd_delete(args: argparse.Namespace) -> int:
+    """Elimina un PDF por su ID.
+
+    Args:
+        args: Namespace con 'pdf_id' (str).
+
+    Returns:
+        Código de salida (0 = éxito, 1 = error).
+    """
+    try:
+        response = httpx.delete(f"{_API_PDFS}/{args.pdf_id}")
+
+        if response.status_code == 404:
+            print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
+            return 1
+
+        response.raise_for_status()
+        print(f"Documento '{args.pdf_id}' eliminado correctamente.")
+        return 0
+
+    except httpx.ConnectError:
+        print(
+            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
+            file=sys.stderr,
+        )
+        return 1
+
+
+# ---------------------------------------------------------------------------
+# Parseo de argumentos
+# ---------------------------------------------------------------------------
+
+def _parse_arguments() -> argparse.Namespace:
+    """Configura el parser principal con sus subcomandos.
+
+    Cada subcomando corresponde a un endpoint de la API:
+        upload  → POST   /api/pdfs
+        list    → GET    /api/pdfs
+        get     → GET    /api/pdfs/{id}/text
+        delete  → DELETE /api/pdfs/{id}
+
+    Returns:
+        Namespace con el subcomando seleccionado y sus argumentos.
     """
     parser = argparse.ArgumentParser(
         prog="fast-pdf",
-        description="Convierte archivos PDF a texto",
-    )
-    parser.add_argument(
-        "pdf_file",
-        type=str,
-        help="Ruta al archivo PDF a procesar",
+        description="Cliente CLI para el gestor de documentos PDF",
     )
 
-    args = parser.parse_args()
-    return Path(args.pdf_file)
+    subparsers = parser.add_subparsers(dest="command", metavar="comando")
+    subparsers.required = True  # Sin subcomando → mostrar ayuda con error
+
+    # --- upload ---
+    upload_parser = subparsers.add_parser(
+        "upload",
+        help="Sube un archivo PDF al servidor",
+    )
+    upload_parser.add_argument(
+        "pdf_file",
+        type=Path,
+        help="Ruta al archivo PDF a subir",
+    )
+    upload_parser.add_argument(
+        "--info",
+        action="store_true",
+        help="Muestra tamaño y fecha además del ID",
+    )
+
+    # --- list ---
+    subparsers.add_parser(
+        "list",
+        help="Lista todos los documentos PDF persistidos",
+    )
+
+    # --- get ---
+    get_parser = subparsers.add_parser(
+        "get",
+        help="Muestra el texto extraído de un PDF",
+    )
+    get_parser.add_argument(
+        "pdf_id",
+        type=str,
+        help="ID del documento",
+    )
+
+    # --- delete ---
+    delete_parser = subparsers.add_parser(
+        "delete",
+        help="Elimina un documento PDF",
+    )
+    delete_parser.add_argument(
+        "pdf_id",
+        type=str,
+        help="ID del documento a eliminar",
+    )
+
+    return parser.parse_args()
+
+
+# ---------------------------------------------------------------------------
+# Entry point
+# ---------------------------------------------------------------------------
+
+# Mapa subcomando → handler. Desacopla el dispatch del parseo: agregar un
+# nuevo subcomando solo requiere definir su handler y registrarlo aquí.
+_COMMANDS = {
+    "upload": _cmd_upload,
+    "list": _cmd_list,
+    "get": _cmd_get,
+    "delete": _cmd_delete,
+}
 
 
 def main() -> int:
     """Entry point del CLI."""
-    pdf_path = _parse_arguments()
-
-    validation_error = _validate_pdf_path(pdf_path)
-    if validation_error:
-        print(f"Error: {validation_error}", file=sys.stderr)
-        return 1
-
-    try:
-        output_path = asyncio.run(process_pdf(pdf_path))
-        print(f"PDF procesado y guardado. Archivo de salida: {output_path}")
-        return 0
-    except Exception as e:
-        print(f"Error al procesar PDF: {e}", file=sys.stderr)
-        return 1
+    args = _parse_arguments()
+    handler = _COMMANDS[args.command]
+    return handler(args)
 
 
 if __name__ == "__main__":
