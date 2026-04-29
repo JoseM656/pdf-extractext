@@ -2,9 +2,9 @@
 
 ## Integrantes
 
-**Tomás Faure  | 10823**
-**José Morata  | 10877**
-**Braian Rojas | 10922**
+- **Tomás Faure  | 10823**
+- **José Morata  | 10877**
+- **Braian Rojas | 10922**
 
 ## Descripción
 
