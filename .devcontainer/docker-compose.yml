@@ -1,0 +1,39 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ..:/workspace:cached,z
+      - /workspace/.venv 
+    working_dir: /workspace
+    ports:
+      - "8000:8000"
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017
+      - MONGO_DB_NAME=pdf_manager
+      # Esta variable ayuda a que Python no guarde archivos .pyc en el volumen
+      - PYTHONDONTWRITEBYTECODE=1
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    # El comando limpia el entorno y arranca el servidor
+    command: >
+      sh -c "uv sync && 
+             uv run uvicorn dev.servers.app:app --host 0.0.0.0 --port 8000 --reload"
+
+  mongodb:
+    image: mongo:7
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mongodb_data:
