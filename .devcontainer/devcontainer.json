@@ -1,0 +1,20 @@
+{
+  "name": "pdf-extractext",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspace",
+  "postStartCommand": "uv sync && uv run uvicorn dev.servers.app:app --host 0.0.0.0 --port 8000 --reload",
+  "forwardPorts": [8000, 27017],
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-python.python",
+        "ms-python.pylance",
+        "charliermarsh.ruff"
+      ],
+      "settings": {
+        "python.defaultInterpreterPath": "/workspace/.venv/bin/python"
+      }
+    }
+  }
+}

@@ -34,6 +34,8 @@ El programa se inicia levantando mongoDB en docker y en una terminal aparte fast
 ## Instalación
 
 ```bash
+sudo rm -rf .venv # Recomendado
+uv venv --python 3.12
 uv sync
 ```
 
@@ -41,68 +43,38 @@ uv sync
 
 ### Cómo levantar el proyecto
 
-#### 1. Base de datos (MongoDB)
-
-La primera vez, crear el contenedor:
+#### 1. Primera vez levantando el proyecto
 
 ```bash
-docker run -d --name mongodb-pdf -p 27017:27017 mongo:7
+# Construye e inicia en segundo plano (detached)
+docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
-Las veces siguientes, si el contenedor ya existe, solo iniciarlo:
+#### 2. Para bajar el contenedor
 
 ```bash
-docker start mongodb-pdf
+# Detiene los servicios sin borrarlos.
+docker compose -f .devcontainer/docker-compose.yml stop
+
+# Borra contenedores, mantiene volúmenes de datos.
+docker compose -f .devcontainer/docker-compose.yml down
+
+# Esto borra los datos de la base de datos y el contenedor.
+docker compose -f .devcontainer/docker-compose.yml down -v
 ```
 
-> El contenedor conserva los datos entre sesiones. Solo usar `docker rm mongodb-pdf`
-> si querés eliminar todos los documentos y empezar desde cero.
-
-#### 2. API (terminal separada)
+#### 3. Para leventar el proyecto por segunda vez o mas veces
 
 ```bash
-uv run uvicorn dev.servers.app:app --reload
+# En caso de que se haya eliminado el contenedor o eliminado. 
+docker compose -f .devcontainer/docker-compose.yml up -d
+
+# Fuerza a no usar cache o verificar contenedores anteriores y inicar de 0.
+docker compose -f .devcontainer/docker-compose.yml up -d --build
+
+# En caso de que el contenedor este guardado.
+docker compose -f .devcontainer/docker-compose.yml start
 ```
-
-Dejar esta terminal abierta mientras se usa el CLI.
-
-#### 3. CLI
-
-```bash
-# Subir un PDF
-uv run fast-pdf upload ruta/al/archivo.pdf
-
-# Subir y ver detalles
-uv run fast-pdf upload ruta/al/archivo.pdf --info
-
-# Listar documentos
-uv run fast-pdf list
-
-# Ver texto extraído
-uv run fast-pdf get <id>
-
-# Eliminar un documento
-uv run fast-pdf delete <id>
-```
-
-#### Detener el proyecto
-
-```bash
-# Detener MongoDB (conserva los datos)
-docker stop mongodb-pdf
-
-# Eliminar el contenedor y todos sus datos (opcional)
-docker rm mongodb-pdf
-```
-
-## Makefile
-
-make mongo   → levanta el contenedor de MongoDB
-make server  → inicia la API con uvicorn
-make start   → Iniciar el contenedor una vez ya creado 
-make stop    → detiene y el contenedor de MongoDB
-make remove  → borra el contenedor (elimina los datos de las sesiones)
-make install → ejecuta uv sync
 
 ## Arquitectura
 
