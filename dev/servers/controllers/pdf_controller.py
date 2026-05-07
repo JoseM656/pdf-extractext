@@ -6,7 +6,6 @@ from dev.models.pdf_document import Pdf
 async def create_pdf(
     title: str,
     description: str | None,
-    path: str,
     size: int,
     extracted_text: str | None = None,
     checksum: str | None = None,
@@ -16,7 +15,6 @@ async def create_pdf(
     Args:
         title: Título del documento.
         description: Descripción opcional.
-        path: Identificador de origen del archivo (puede ser una ruta o un URI descriptivo).
         size: Tamaño del archivo en bytes.
         extracted_text: Texto ya extraído del PDF. Se persiste junto al documento
             para no requerir el archivo original en lecturas posteriores.
@@ -28,7 +26,6 @@ async def create_pdf(
     pdf = Pdf(
         title=title,
         description=description,
-        path=path,
         size=size,
         extracted_text=extracted_text,
         checksum=checksum,

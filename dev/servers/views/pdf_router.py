@@ -19,9 +19,6 @@ class PdfResponse(BaseModel):
     size: int
     created_at: str
 
-    class Config:
-        from_attributes = True
-
 
 def _to_response(pdf) -> PdfResponse:
     """Convierte un documento Pdf al esquema de respuesta HTTP."""
@@ -82,7 +79,6 @@ async def create_pdf(
     pdf = await pdf_controller.create_pdf(
         title=used_title,
         description=description,
-        path=f"memory://{file.filename}",
         size=size,
         extracted_text=extracted_text,
         checksum=checksum,
