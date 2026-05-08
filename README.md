@@ -77,23 +77,36 @@ docker compose -f .devcontainer/docker-compose.yml start
 
 ## Uso de de la herramienta
 
-Una vez levantado docker y sincronizado uv se puede usar directamente con: `fast-pdf [comando]` en caso
-de que falle, se puede usar `uv run fast-pdf [comando]` para minimizar errores. Se puede usar `fast-pdf -h` 
+Una vez levantado docker y sincronizado uv se puede usar directamente con: `fast-pdf <comando>` en caso
+de que falle, se puede usar `uv run fast-pdf <comando>` para minimizar errores. Se puede usar `fast-pdf -h` 
 para ayuda.
 
 ### Comandos
 
 ```bash
 Comandos:
-  upload    - Sube un archivo PDF al servidor.
-  list      - Lista todos los documentos PDF persistidos.
-  get       - Muestra el texto extraído de un PDF.
-  delete    - Elimina un documento PDF.
-  download  - Descarga el texto extraído de un PDF como archivo .txt.
+
+  # Sube un archivo PDF al servidor.
+  upload <direccion_archivo>
+
+  # Lista todos los documentos PDF persistidos.
+  list
+
+  # Muestra el texto extraído de un PDF por consola.
+  get <id_pdf>
+
+  # Elimina un documento PDF del servidor. 
+  delete <id_pdf>
+
+  # Descarga el texto extraído de un PDF como archivo .txt
+  download <id_pdf>
+
 Flags:
-  -h --help - Muesta ayuda.
-  --output archivo.txt - Usando en download permite renombrar el archivo de salida.
-```
+
+  -h --help
+  
+  # Usando en download permite renombrar el archivo de salida.
+  --output <nombre_archivo.txt> 
 
 ---
 
