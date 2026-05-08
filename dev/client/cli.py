@@ -195,6 +195,46 @@ def _cmd_delete(args: argparse.Namespace) -> int:
         return 1
 
 
+def _cmd_download(args: argparse.Namespace) -> int:
+    """Descarga el texto extraído de un PDF y lo guarda en disco.
+
+    Args:
+        args: Namespace con 'pdf_id' (str) y 'output' (Path | None).
+
+    Returns:
+        Código de salida (0 = éxito, 1 = error).
+    """
+    try:
+        response = httpx.get(f"{_API_PDFS}/{args.pdf_id}/download")
+
+        if response.status_code == 404:
+            print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
+            return 1
+
+        response.raise_for_status()
+
+        # Determinar nombre del archivo de salida
+        if args.output:
+            output_path = args.output
+        else:
+            # Extraer nombre del header Content-Disposition
+            disposition = response.headers.get("content-disposition", "")
+            filename = "documento.txt"
+            if 'filename="' in disposition:
+                filename = disposition.split('filename="')[1].rstrip('"')
+            output_path = Path(filename)
+
+        output_path.write_text(response.text, encoding="utf-8")
+        print(f"Texto guardado en: {output_path}")
+        return 0
+
+    except httpx.ConnectError:
+        print(
+            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
+            file=sys.stderr,
+        )
+        return 1
+
 # ---------------------------------------------------------------------------
 # Parseo de argumentos
 # ---------------------------------------------------------------------------
@@ -262,6 +302,23 @@ def _parse_arguments() -> argparse.Namespace:
         type=str,
         help="ID del documento a eliminar",
     )
+    
+    # --- download ---
+    download_parser = subparsers.add_parser(
+        "download",
+        help="Descarga el texto extraído de un PDF como archivo .txt",
+    )
+    download_parser.add_argument(
+        "pdf_id",
+        type=str,
+        help="ID del documento",
+    )
+    download_parser.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Nombre del archivo de salida (default: título del documento)",
+    )
 
     return parser.parse_args()
 
@@ -277,6 +334,7 @@ _COMMANDS = {
     "list": _cmd_list,
     "get": _cmd_get,
     "delete": _cmd_delete,
+    "download": _cmd_download,
 }
 
 
