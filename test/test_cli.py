@@ -303,3 +303,68 @@ class TestDeleteCommand:
             result = _cmd_delete(args)
 
             assert result == 1
+            
+
+class TestDownloadCommand:
+    """Tests para el subcomando 'download'."""
+
+    def test_download_saves_file_with_default_name(
+        self, tmp_path: Path, capsys
+    ) -> None:
+        """download guarda el texto en un archivo con el nombre del título."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = "Contenido del PDF."
+        mock_response.headers = {
+            "content-disposition": 'attachment; filename="Mi Documento.txt"'
+        }
+
+        with patch("httpx.get", return_value=mock_response):
+            from dev.client.cli import _cmd_download
+            import argparse
+            import os
+
+            os.chdir(tmp_path)
+            args = argparse.Namespace(pdf_id="abc123", output=None)
+            result = _cmd_download(args)
+
+            assert result == 0
+            assert (tmp_path / "Mi Documento.txt").exists()
+
+    def test_download_saves_file_with_custom_name(
+        self, tmp_path: Path
+    ) -> None:
+        """--output permite especificar el nombre del archivo."""
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.text = "Contenido del PDF."
+        mock_response.headers = {
+            "content-disposition": 'attachment; filename="Mi Documento.txt"'
+        }
+
+        output_file = tmp_path / "mi_archivo.txt"
+
+        with patch("httpx.get", return_value=mock_response):
+            from dev.client.cli import _cmd_download
+            import argparse
+
+            args = argparse.Namespace(pdf_id="abc123", output=output_file)
+            result = _cmd_download(args)
+
+            assert result == 0
+            assert output_file.exists()
+            assert output_file.read_text() == "Contenido del PDF."
+
+    def test_download_returns_1_when_pdf_not_found(self, capsys) -> None:
+        """download retorna código 1 si el ID no existe."""
+        mock_response = MagicMock()
+        mock_response.status_code = 404
+
+        with patch("httpx.get", return_value=mock_response):
+            from dev.client.cli import _cmd_download
+            import argparse
+
+            args = argparse.Namespace(pdf_id="id-inexistente", output=None)
+            result = _cmd_download(args)
+
+            assert result == 1

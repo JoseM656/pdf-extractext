@@ -199,3 +199,29 @@ class TestExtractTextEndpoint:
 
         assert response.status_code == 404
         assert "Not found" in response.json()["detail"]
+        
+
+class TestDownloadEndpoint:
+    """Tests para el endpoint GET /api/pdfs/{pdf_id}/download."""
+
+    def test_download_returns_text_as_file(
+        self, client: TestClient, sample_pdf_bytes: bytes
+    ):
+        """Retorna el texto extraído como archivo descargable."""
+        create_response = client.post(
+            "/api/pdfs",
+            files={"file": ("doc.pdf", io.BytesIO(sample_pdf_bytes), "application/pdf")},
+            data={"title": "Mi Documento"},
+        )
+        pdf_id = create_response.json()["id"]
+
+        response = client.get(f"/api/pdfs/{pdf_id}/download")
+
+        assert response.status_code == 200
+        assert "attachment" in response.headers["content-disposition"]
+        assert "text/plain" in response.headers["content-type"]
+
+    def test_download_returns_404_when_pdf_not_found(self, client: TestClient):
+        """Retorna 404 cuando el PDF no existe."""
+        response = client.get("/api/pdfs/000000000000000000000000/download")
+        assert response.status_code == 404

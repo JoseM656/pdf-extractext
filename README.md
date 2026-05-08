@@ -23,8 +23,6 @@ Este proyecto busca resolver problemas comunes como:
 
 ## Requisitos previos
 
-El programa se inicia levantando mongoDB en docker y en una terminal aparte fastAPI.
-
 - Python 3.12
 - uv
 - Docker
@@ -41,16 +39,16 @@ uv sync
 
 ---
 
-### Cómo levantar el proyecto
+### Levantar el proyecto
 
-#### 1. Primera vez levantando el proyecto
+#### 1. Levantar y crear contenedor
 
 ```bash
 # Construye e inicia en segundo plano (detached)
 docker compose -f .devcontainer/docker-compose.yml up -d --build
 ```
 
-#### 2. Para bajar el contenedor
+#### 2. Bajar el contenedor
 
 ```bash
 # Detiene los servicios sin borrarlos.
@@ -63,7 +61,7 @@ docker compose -f .devcontainer/docker-compose.yml down
 docker compose -f .devcontainer/docker-compose.yml down -v
 ```
 
-#### 3. Para leventar el proyecto por segunda vez o mas veces
+#### 3. Levantar el contenedor ya creado
 
 ```bash
 # En caso de que se haya eliminado el contenedor o eliminado. 
@@ -75,6 +73,29 @@ docker compose -f .devcontainer/docker-compose.yml up -d --build
 # En caso de que el contenedor este guardado.
 docker compose -f .devcontainer/docker-compose.yml start
 ```
+---
+
+## Uso de de la herramienta
+
+Una vez levantado docker y sincronizado uv se puede usar directamente con: `fast-pdf [comando]` en caso
+de que falle, se puede usar `uv run fast-pdf [comando]` para minimizar errores. Se puede usar `fast-pdf -h` 
+para ayuda.
+
+### Comandos
+
+```bash
+Comandos:
+  upload    - Sube un archivo PDF al servidor.
+  list      - Lista todos los documentos PDF persistidos.
+  get       - Muestra el texto extraído de un PDF.
+  delete    - Elimina un documento PDF.
+  download  - Descarga el texto extraído de un PDF como archivo .txt.
+Flags:
+  -h --help - Muesta ayuda.
+  --output archivo.txt - Usando en download permite renombrar el archivo de salida.
+```
+
+---
 
 ## Arquitectura
 
@@ -123,15 +144,16 @@ En este proyecto se utiliza **MongoDB** como sistema de almacenamiento.
 
 A continuación se describe la estructura principal del repositorio:
 
-| Carpeta / Archivo | Descripción |
-|------------------|-------------|
-| `dev/` | Código fuente principal del proyecto |
-| `tests/` | Pruebas automatizadas del sistema |
-| `upload` | Zonas de pruebas |
-| `README.md` | Documentación principal del repositorio |
-| `pyproject.toml` | Dependencias del proyecto |
-| `.gitignore` | Archivos ignorados por Git |
-| `Makefile` | Archivo Makefile para la automatización | 
+
+| Carpeta / Archivo | Descripción                             |
+| ------------------- | ------------------------------------------ |
+| `dev/`            | Código fuente principal del proyecto    |
+| `tests/`          | Pruebas automatizadas del sistema        |
+| `upload/`         | carpeta de pruebas                       |
+| `README.md`       | Documentación principal del repositorio |
+| `pyproject.toml`  | Dependencias del proyecto                |
+| `.gitignore`      | Archivos ignorados por Git               |
+| `.devcontainer/`  | Configuracion para lanzar contenedor     |
 
 Esta organización permite mantener una separación clara entre código, pruebas y documentación.
 
@@ -141,19 +163,15 @@ Esta organización permite mantener una separación clara entre código, pruebas
 
 El proyecto utiliza diversas tecnologías para el procesamiento y análisis de documentos:
 
-- **Python**  
+- **Python**
   Lenguaje principal de desarrollo.
-
-- **UV**  
+- **UV**
   Herramienta moderna para la gestión de dependencias y entornos Python.
-
-- **Inteligencia Artificial (IA)**  
+- **Inteligencia Artificial (IA)**
   Utilizada para análisis avanzado del contenido extraído.
-
-- **OpenCode**  
+- **OpenCode**
   Herramienta utilizada dentro del flujo de desarrollo.
-
-- **MongoDB**  
+- **MongoDB**
   Base de datos NoSQL utilizada para almacenar la información extraída.
 
 ---
@@ -188,16 +206,16 @@ Algunos principios aplicados incluyen:
 
 El proyecto también sigue principios clásicos de diseño de software:
 
-**KISS (Keep It Simple, Stupid)**  
+**KISS (Keep It Simple, Stupid)**
 Mantener el código simple y fácil de entender.
 
-**DRY (Don't Repeat Yourself)**  
+**DRY (Don't Repeat Yourself)**
 Evitar duplicación de lógica en el código.
 
-**YAGNI (You Aren't Gonna Need It)**  
+**YAGNI (You Aren't Gonna Need It)**
 Implementar solo lo necesario.
 
-**SOLID**  
+**SOLID**
 Conjunto de principios para diseño orientado a objetos que mejora la mantenibilidad del software.
 
 ---

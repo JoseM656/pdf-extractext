@@ -8,6 +8,7 @@ from pydantic import BaseModel
 from dev.servers.controllers import pdf_controller
 from dev.servers.services.pdf_extractor import PdfExtractor
 from dev.servers.services.pdf_validator import PdfValidationError, validate_pdf_bytes
+from fastapi.responses import PlainTextResponse
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
 
@@ -119,3 +120,22 @@ async def extract_text(pdf_id: str):
         return await pdf_controller.extract_text(pdf_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+ 
+    
+@router.get("/{pdf_id}/download", response_class=PlainTextResponse)
+async def download_text(pdf_id: str):
+    """Descarga el texto extraído de un PDF como archivo .txt."""
+    try:
+        pdf = await pdf_controller.get_pdf(pdf_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    text = pdf.extracted_text or ""
+    filename = f"{pdf.title}.txt"
+
+    return PlainTextResponse(
+        content=text,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )
