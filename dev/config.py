@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = 10
     API_BASE_URL: str = "http://localhost:8000"
 
+    # Esta linea es clave para sobreescribir la configuracion del entorno.
     model_config = SettingsConfigDict(env_file=".env", extra="allow")
 
 
