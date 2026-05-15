@@ -1,6 +1,6 @@
 [project]
 name = "pdf-manager"
-version = "0.5.0"
+version = "1.0.0"
 description = "API para gestión de documentos PDF"
 readme = "README.md"
 requires-python = ">=3.12"
