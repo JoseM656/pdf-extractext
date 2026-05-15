@@ -7,14 +7,8 @@ class Settings(BaseSettings):
 
     MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB_NAME: str = "pdf_manager"
-    UPLOAD_DIR: str = "./uploads"
 
-    # Tamaño máximo permitido para archivos PDF (en MB).
-    # Configurable vía variable de entorno MAX_FILE_SIZE_MB=20
     MAX_FILE_SIZE_MB: int = 10
-
-    # URL base de la API FastAPI a la que el CLI envía sus requests.
-    # Configurable vía variable de entorno: API_BASE_URL=http://servidor:8000
     API_BASE_URL: str = "http://localhost:8000"
 
     model_config = SettingsConfigDict(env_file=".env", extra="allow")

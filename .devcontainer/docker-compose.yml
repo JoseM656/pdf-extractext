@@ -14,6 +14,7 @@ services:
       - MONGO_DB_NAME=pdf_manager
       # Esta variable ayuda a que Python no guarde archivos .pyc en el volumen
       - PYTHONDONTWRITEBYTECODE=1
+      - API_BASE_URL=http://localhost:8000 # Resuelve conflico con .env
     depends_on:
       mongodb:
         condition: service_healthy
