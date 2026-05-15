@@ -1,9 +1,19 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from importlib.metadata import version, PackageNotFoundError
 
+def get_version():
+    """
+    Consigue la version del programa desde el .toml
+    """
+    try:
+        return version("pdf-manager") 
+    
+    except PackageNotFoundError:    
+        return "unknown" # en caso de que no lo encuentre.
 
 class Settings(BaseSettings):
     APP_NAME: str = "PDF Manager"
-    VERSION: str = "1.0.0"
+    VERSION: str = get_version()
 
     MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB_NAME: str = "pdf_manager"
