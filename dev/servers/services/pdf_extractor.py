@@ -1,8 +1,10 @@
 """Servicio de extracción de texto de PDFs."""
 
 import io
+import logging
 from pathlib import Path
-from PyPDF import PdfReader
+
+from pypdf import PdfReader
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
 # pypdf emite warnings en stderr cuando encuentra PDFs con xref malformado
