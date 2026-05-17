@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "pypdf>=4.0.0",
     "python-multipart>=0.0.26",
+    "httpx>=0.28.1",
 ]
 
 [project.scripts]
@@ -22,7 +23,6 @@ fast-pdf = "dev.main:main"
 dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=1.3.0",
-    "httpx>=0.28.1",
 ]
 
 [build-system]
