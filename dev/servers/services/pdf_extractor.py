@@ -1,9 +1,16 @@
 """Servicio de extracción de texto de PDFs."""
 
 import io
+import logging
 from pathlib import Path
 
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
+
+logging.getLogger("pypdf").setLevel(logging.ERROR)
+# pypdf emite warnings en stderr cuando encuentra PDFs con xref malformado
+# o encabezados inválidos. Esos casos ya están cubiertos por nuestra validación
+# de magic bytes en pdf_validator.py. Silenciamos el logger de pypdf para no
+# ensuciar los logs del servidor con mensajes que no aportan información accionable.
 
 
 class PdfExtractor:
