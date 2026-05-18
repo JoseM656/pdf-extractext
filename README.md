@@ -184,7 +184,7 @@ Por completar :p
 
 ![Diagrama de clases](docs/diagrama_clases.svg)
 
-> Un diagrama de clases en Lenguaje Unificado de Modelado (UML) es un tipo de diagrama de estructura estática que describe la estructura de un sistema mostrando > las clases del sistema, sus atributos, operaciones (o métodos), y las relaciones entre los objetos.
+> Un diagrama de clases en Lenguaje Unificado de Modelado (UML) es un tipo de diagrama de estructura estática que describe la estructura de un sistema mostrando las clases del sistema, sus atributos, operaciones (o métodos), y las relaciones entre los objetos.
 
 ### Diagrama de Secuencia
 
