@@ -73,13 +73,13 @@ docker compose -f .devcontainer/docker-compose.yml up -d --build
 # En caso de que el contenedor este guardado.
 docker compose -f .devcontainer/docker-compose.yml start
 ```
+
 ---
 
 ## Uso de de la herramienta
 
 Una vez levantado docker y sincronizado uv se puede usar directamente con: `fast-pdf <comando>` en caso
-de que falle, se puede usar `uv run fast-pdf <comando>` para minimizar errores. Se puede usar `fast-pdf -h` 
-para ayuda.
+de que falle, se puede usar `uv run fast-pdf <comando>` para minimizar errores. Se puede usar `fast-pdf -h` para ayuda.
 
 ### Comandos
 
@@ -159,18 +159,36 @@ En este proyecto se utiliza **MongoDB** como sistema de almacenamiento.
 
 A continuación se describe la estructura principal del repositorio:
 
-
-| Carpeta / Archivo | Descripción                             |
-| ------------------- | ------------------------------------------ |
-| `dev/`            | Código fuente principal del proyecto    |
+| Carpeta / Archivo | Descripción                              |
+|-------------------|------------------------------------------|
+| `dev/`            | Código fuente principal del proyecto     |
 | `tests/`          | Pruebas automatizadas del sistema        |
-| `upload/`         | carpeta de pruebas                       |
-| `README.md`       | Documentación principal del repositorio |
+| `upload/`         | Carpeta de pruebas                       |
+| `docs/`           | Diagramas y otros documentos             |
+| `README.md`       | Documentación principal del repositorio  |
 | `pyproject.toml`  | Dependencias del proyecto                |
 | `.gitignore`      | Archivos ignorados por Git               |
 | `.devcontainer/`  | Configuracion para lanzar contenedor     |
 
 Esta organización permite mantener una separación clara entre código, pruebas y documentación.
+
+---
+
+## Diagramas UML
+
+### Infograma
+
+Por completar :p
+
+### Diagrama de Clases
+
+![Diagrama de clases](docs/diagrama_clases.svg)
+
+> Un diagrama de clases en Lenguaje Unificado de Modelado (UML) es un tipo de diagrama de estructura estática que describe la estructura de un sistema mostrando > las clases del sistema, sus atributos, operaciones (o métodos), y las relaciones entre los objetos.
+
+### Diagrama de Secuencia
+
+Por completar :p
 
 ---
 

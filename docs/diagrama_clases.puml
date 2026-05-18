@@ -1,1 +1,81 @@
-#diagrama_clases
+@startuml diagrama_clases
+skinparam handwritten false
+skinparam shadowing false
+
+skinparam package {
+    BackgroundColor GhostWhite
+    BorderColor #AAAAAA
+    FontColor #333333
+}
+
+skinparam class {
+    ArrowColor #555555
+    BorderColor #333333
+    FontColor #FFFFFF
+    AttributeFontColor #FFFFFF
+    StereotypeFontColor #DDDDDD
+}
+
+package "Modelo" {
+    class Pdf <<Document>> #3F3F9F {
+        + title : str
+        + description : str | None
+        + size : int
+        + created_at : datetime
+        + extracted_text : str | None
+        + checksum : str | None
+        --
+        Settings.name = "pdfs"
+    }
+}
+
+package "Servicios" {
+    class PdfExtractor #004D40 {
+        + extract_text(source : Path | bytes) : str
+    }
+    class PdfValidationError <<exception>> #7B1A1A {
+        + validate_pdf_bytes(content, filename) : None
+        + validate_pdf_path(pdf_path) : None
+    }
+}
+
+package "Controlador" {
+    class pdf_controller <<module>> #0D47A1 {
+        + create_pdf(title, desc, size, text, checksum) : Pdf
+        + get_pdf_by_checksum(checksum) : Pdf | None
+        + list_pdfs() : list[Pdf]
+        + get_pdf(pdf_id) : Pdf
+        + delete_pdf(pdf_id) : None
+        + extract_text(pdf_id) : dict
+    }
+}
+
+package "Vista" {
+    class pdf_router <<router>> #4A235A {
+        + POST /api/pdfs
+        + GET /api/pdfs
+        + GET /api/pdfs/{id}
+        + DELETE /api/pdfs/{id}
+        + GET /api/pdfs/{id}/text
+        + GET /api/pdfs/{id}/download
+    }
+}
+
+package "Config" {
+    class Settings <<singleton>> #37474F {
+        + MONGO_URI : str
+        + MONGO_DB_NAME : str
+        + API_BASE_URL : str
+        + MAX_FILE_SIZE_MB : int
+        + VERSION : str
+    }
+}
+
+pdf_router ..> pdf_controller : delega
+pdf_controller ..> PdfExtractor : usa
+pdf_controller ..> PdfValidationError : lanza
+pdf_controller ..> Pdf : persiste
+Settings <.. pdf_router : inyecta
+Settings <.. pdf_controller : inyecta
+
+@enduml
