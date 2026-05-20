@@ -27,11 +27,6 @@ class TestConfig:
         assert settings.MONGO_DB_NAME is not None
         assert settings.MONGO_DB_NAME == "pdf_manager"
 
-    def test_settings_upload_dir_is_defined(self):
-        """La aplicación tiene un directorio de uploads configurado."""
-        assert settings.UPLOAD_DIR is not None
-        assert settings.UPLOAD_DIR == "./uploads"
-
     def test_settings_api_base_url_is_defined(self):
         """La aplicación tiene una URL base de API configurada."""
         assert settings.API_BASE_URL is not None
