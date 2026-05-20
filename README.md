@@ -188,7 +188,9 @@ Por completar :p
 
 ### Diagrama de Secuencia
 
-Por completar :p
+![Diagrama de secuencia](docs/diagrama_secuencia.svg)
+
+>Un diagrama de secuencia muestra cómo interactúan los componentes de un sistema en orden cronológico, representando el flujo de mensajes entre participantes para ilustrar un proceso específico.
 
 ---
 
