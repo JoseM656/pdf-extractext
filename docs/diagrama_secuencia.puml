@@ -1,1 +1,55 @@
-#diagrama_secuencia
+@startuml
+title Diagrama de Secuencia — pdf-extractext
+
+skinparam participant {
+    BackgroundColor<<cliente>> #D6EAF8
+    BorderColor<<cliente>> #2E86C1
+    BackgroundColor<<vista>> #D5F5E3
+    BorderColor<<vista>> #1E8449
+    BackgroundColor<<controlador>> #D5F5E3
+    BorderColor<<controlador>> #1E8449
+    BackgroundColor<<db>> #FAD7A0
+    BorderColor<<db>> #D35400
+}
+
+skinparam actor {
+    BackgroundColor #D6EAF8
+    BorderColor #2E86C1
+}
+
+skinparam sequenceArrowColor #2E86C1
+skinparam sequenceArrowThickness 1.5
+skinparam sequenceDividerBackgroundColor #EBF5FB
+skinparam sequenceDividerBorderColor #2E86C1
+skinparam sequenceDividerFontColor #1A5276
+skinparam sequenceDividerFontStyle bold
+
+actor Cliente <<cliente>>
+participant CLI <<cliente>>
+participant pdf_router <<vista>>
+participant pdf_controller <<controlador>>
+database MongoDB <<db>>
+
+== UPLOAD ==
+
+Cliente -> CLI : subir documento
+CLI -> pdf_router : api/pdfs
+
+pdf_router -> pdf_router : validate_bytes()
+pdf_router -> pdf_controller : checksum
+pdf_controller -> MongoDB : find_one(checksum)
+MongoDB --> pdf_controller : None
+
+pdf_router -> pdf_controller : PDF
+pdf_controller --> CLI : PDFResponse
+
+== DOWNLOAD ==
+
+Cliente -> CLI : pedir texto
+CLI -> pdf_router : GET api/pdfs
+pdf_router -> pdf_controller : extract_text
+pdf_controller -> MongoDB : find_id
+MongoDB --> pdf_controller : PDF
+pdf_controller --> CLI : pdf_id
+CLI --> Cliente : texto_extraido
+@enduml
