@@ -1,0 +1,12 @@
+name: parse-documents-fast-stack
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: parse-documents-fast:1.1.0
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
