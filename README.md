@@ -178,7 +178,10 @@ Esta organización permite mantener una separación clara entre código, pruebas
 
 ### Infograma
 
-Por completar :p
+![Infograma del sistema](docs/infograma.svg)
+
+> Una vista general del sistema en lenguaje no técnico: qué hace,
+> cómo fluye la información y desde dónde se puede usar.
 
 ### Diagrama de Clases
 

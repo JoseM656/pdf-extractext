@@ -1,1 +1,89 @@
 #infograma
+@startuml infograma
+skinparam backgroundColor #FAFAFA
+skinparam defaultFontName sans-serif
+skinparam defaultFontSize 13
+skinparam roundCorner 12
+skinparam shadowing false
+skinparam ArrowColor #455A64
+skinparam ArrowThickness 2
+
+skinparam rectangle {
+    BackgroundColor #E3F2FD
+    BorderColor #1565C0
+    FontColor #0D47A1
+    BorderThickness 2
+}
+
+skinparam card {
+    BackgroundColor #FFFFFF
+    BorderColor #90A4AE
+    FontColor #263238
+    BorderThickness 1.5
+}
+
+skinparam note {
+    BackgroundColor #FFF9C4
+    BorderColor #F9A825
+    FontColor #4E342E
+}
+
+title <b>pdf-extractext</b>\n<i>Extracción inteligente de texto desde documentos PDF</i>
+
+' ── CLIENTES ────────────────────────────────────────────────────────────────
+
+rectangle "🖥️  CLI\n<i>Terminal</i>" as CLI #D7F7D4/A5D6A7 {
+}
+
+rectangle "🌐  Navegador Web\n<i>Swagger / REST</i>" as WEB #D7F7D4/A5D6A7 {
+}
+
+rectangle "📱  App Móvil\n<i>Cualquier cliente HTTP</i>" as MOBILE #D7F7D4/A5D6A7 {
+}
+
+' ── API ──────────────────────────────────────────────────────────────────────
+
+rectangle "⚡  API Universal  —  FastAPI\n<b>Asincrónica · Cualquier cliente puede conectarse</b>\n<i>Recibe, valida y procesa cualquier solicitud HTTP</i>" as API #1565C0 {
+}
+
+' ── PROCESAMIENTO ───────────────────────────────────────────────────────────
+
+card "🔍  Validación real\n<b>Magic bytes %PDF-</b>\nNo alcanza con la extensión .pdf\nSe verifica el contenido real\nTamaño máximo configurable" as VAL
+
+card "🔒  Anti-duplicados\n<b>SHA-256 Checksum</b>\nCada archivo tiene una\nhuella digital única.\nSi ya fue subido, se avisa\nsin volver a procesarlo." as SHA
+
+card "📄  Extracción de texto\n<b>pypdf — modo layout</b>\nPreserva la estructura visual:\npárrafos, listas, indentación.\nSin escribir nada a disco." as EXTRACT
+
+' ── ALMACENAMIENTO ──────────────────────────────────────────────────────────
+
+rectangle "🍃  MongoDB\n<b>Base de datos no relacional</b>\nGuarda: texto extraído,\nchecksum SHA-256\ny metadatos del documento" as MONGO #E65100 {
+}
+
+' ── INFRAESTRUCTURA ─────────────────────────────────────────────────────────
+
+note as DOCKER
+  🐳  <b>Docker-ready</b>
+  Un solo comando levanta
+  el sistema completo.
+  Fácil de exportar a
+  cualquier servidor de producción.
+end note
+
+' ── FLUJO ───────────────────────────────────────────────────────────────────
+
+CLI    -right-> API : sube PDF
+WEB    -right-> API : sube PDF
+MOBILE -right-> API : sube PDF
+
+API -down-> VAL      : 1. Valida formato y tamaño
+VAL -right-> SHA     : 2. Calcula checksum
+SHA -right-> EXTRACT : 3. Extrae texto en memoria
+
+EXTRACT -down-> MONGO : 4. Persiste texto + checksum
+
+MONGO -left-> API : ✓ Respuesta al cliente
+
+DOCKER .up. API
+DOCKER .up. MONGO
+
+@enduml
