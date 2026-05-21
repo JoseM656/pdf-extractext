@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="960" height="620" viewBox="0 0 960 620">
+<defs>
+<marker markerWidth="7" markerHeight="6" viewBox="-1 -3 7 6" orient="auto" id="d0">
+<path d="M-1,-2 L-1,2 L4,0 Z" fill="#455A64" />
+</marker>
+</defs>
+<rect x="0" y="0" width="960" height="620" fill="#F8FAFC" />
+<rect x="0" y="0" width="960" height="56" fill="#1565C0" rx="0" />
+<text x="480.0" y="26" font-size="22" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#FFFFFF">pdf-extractext</text>
+<text x="480.0" y="47" font-size="12" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#BBDEFB">Extracción inteligente de texto desde documentos PDF</text>
+<rect x="22" y="85" width="150" height="85" fill="#E8F5E9" stroke="#43A047" stroke-width="2" rx="12" />
+<text x="97" y="111" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#1B5E20">🖥️ CLI</text>
+<text x="97" y="131" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">Terminal /</text>
+<text x="97" y="147" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">Línea de comandos</text>
+<rect x="22" y="210" width="150" height="85" fill="#E8F5E9" stroke="#43A047" stroke-width="2" rx="12" />
+<text x="97" y="236" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#1B5E20">🌐 Web</text>
+<text x="97" y="256" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">Navegador /</text>
+<text x="97" y="272" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">Swagger UI</text>
+<rect x="22" y="335" width="150" height="85" fill="#E8F5E9" stroke="#43A047" stroke-width="2" rx="12" />
+<text x="97" y="361" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#1B5E20">📱 Móvil</text>
+<text x="97" y="381" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">Cualquier</text>
+<text x="97" y="397" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#2E7D32">cliente HTTP</text>
+<path d="M174,127 L250,127" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M174,252 L250,252" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M174,377 L250,377" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<rect x="252" y="80" width="168" height="350" fill="#1565C0" stroke="#0D47A1" stroke-width="2" rx="16" />
+<text x="336" y="108" font-size="14" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#FFFFFF">⚡ API Universal</text>
+<text x="336" y="128" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#90CAF9">FastAPI — Asincrónica</text>
+<text x="336" y="150" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#BBDEFB">Cualquier cliente HTTP</text>
+<text x="336" y="168" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#BBDEFB">puede conectarse</text>
+<path d="M264,184 L408,184" stroke="#42A5F5" stroke-width="1" stroke-dasharray="4,3" />
+<text x="336" y="202" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#90CAF9">Endpoints disponibles:</text>
+<text x="336" y="220" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#E3F2FD">POST /api/pdfs</text>
+<text x="336" y="242" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#E3F2FD">GET /api/pdfs</text>
+<text x="336" y="264" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#E3F2FD">GET /{id}/text</text>
+<text x="336" y="286" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#E3F2FD">GET /{id}/download</text>
+<text x="336" y="308" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#E3F2FD">DELETE /{id}</text>
+<path d="M422,127 L478,127" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M422,252 L478,252" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M422,377 L478,377" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<rect x="480" y="85" width="220" height="85" fill="#FFFFFF" stroke="#90A4AE" stroke-width="2" rx="10" />
+<text x="590" y="105" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#0D47A1">🔍 1. Validación real</text>
+<text x="590" y="123" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Magic bytes %PDF-</text>
+<text x="590" y="139" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">No basta la extensión .pdf</text>
+<text x="590" y="155" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Tamaño máximo configurable</text>
+<rect x="480" y="210" width="220" height="85" fill="#FFFFFF" stroke="#90A4AE" stroke-width="2" rx="10" />
+<text x="590" y="230" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#0D47A1">🔒 2. Anti-duplicados SHA-256</text>
+<text x="590" y="248" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Huella digital única</text>
+<text x="590" y="264" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">por contenido del archivo</text>
+<text x="590" y="280" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Duplicados rechazados sin reprocesar</text>
+<rect x="480" y="335" width="220" height="85" fill="#FFFFFF" stroke="#90A4AE" stroke-width="2" rx="10" />
+<text x="590" y="355" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#0D47A1">📄 3. Extracción de texto</text>
+<text x="590" y="373" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">pypdf — modo layout</text>
+<text x="590" y="389" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Preserva párrafos, listas</text>
+<text x="590" y="405" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#455A64">Sin escribir nada al disco</text>
+<path d="M590,170 L590,210" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M590,295 L590,335" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<path d="M702,377 L758,377" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<rect x="760" y="220" width="176" height="160" fill="#FFF3E0" stroke="#E65100" stroke-width="2" rx="16" />
+<text x="848" y="248" font-size="14" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#BF360C">🍃 MongoDB</text>
+<text x="848" y="268" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#E65100">No relacional</text>
+<path d="M772,282 L924,282" stroke="#FFCC80" stroke-width="1" />
+<text x="848" y="300" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#4E342E">✓ Texto extraído</text>
+<text x="848" y="318" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#4E342E">✓ Checksum SHA-256</text>
+<text x="848" y="336" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#4E342E">✓ Metadatos del PDF</text>
+<text x="848" y="354" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#4E342E">✓ Título y tamaño</text>
+<path d="M848,220 L848,192" stroke="#78909C" stroke-width="1.5" stroke-dasharray="5,3" />
+<path d="M420,192 L848,192" stroke="#78909C" stroke-width="1.5" stroke-dasharray="5,3" />
+<path d="M420,192 L420,254" stroke="#455A64" stroke-width="2.2" marker-end="url(#d0)" />
+<text x="634" y="185" font-size="10" text-anchor="middle" font-family="Arial, sans-serif" fill="#546E7A" font-style="italic">✓ Respuesta al cliente</text>
+<rect x="252" y="458" width="684" height="68" fill="#E3F2FD" stroke="#1976D2" stroke-width="2" rx="12" />
+<text x="594" y="482" font-size="13" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#0D47A1">🐳  Docker-ready</text>
+<text x="594" y="502" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="normal" fill="#1565C0">Un solo comando levanta el sistema completo.  Fácil de desplegar en cualquier servidor de producción.</text>
+<rect x="22" y="450" width="212" height="136" fill="#FAFAFA" stroke="#CFD8DC" stroke-width="2" rx="10" />
+<text x="128" y="470" font-size="11" text-anchor="middle" font-family="Arial, sans-serif" font-weight="bold" fill="#455A64">Características</text>
+<path d="M32,478 L222,478" stroke="#CFD8DC" stroke-width="1" />
+<text x="34" y="494" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">⚡ Procesamiento asincrónico</text>
+<text x="34" y="510" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">🔒 SHA-256 anti-duplicados</text>
+<text x="34" y="526" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">🍃 MongoDB no relacional</text>
+<text x="34" y="542" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">📄 Layout preservado</text>
+<text x="34" y="558" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">🐳 Docker-ready</text>
+<text x="34" y="574" font-size="9" text-anchor="start" font-family="Arial, sans-serif" font-weight="normal" fill="#37474F">🌐 API universal (CLI/Web/Móvil)</text>
+</svg>
