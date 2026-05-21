@@ -23,55 +23,87 @@ Este proyecto busca resolver problemas comunes como:
 
 ## Requisitos previos
 
-- Python 3.12
-- uv
-- Docker
+- **Docker** y **Docker Compose** (Instalados y activos en el sistema).
+- *Python 3.12* y *uv* (Opcional, únicamente si se desea ejecutar el servidor de forma nativa sin usar contenedores).
 
 ---
 
-## Instalación
+## Configuración Inicial
+
+Antes de levantar cualquiera de los entornos, es indispensable generar el archivo de configuración de entorno local. En la raíz del proyecto, ejecute:
 
 ```bash
-sudo rm -rf .venv # Recomendado
-uv venv --python 3.12
-uv sync
+cp .env.example .env
 ```
 
----
+> 💡 **Nota:** Abra el archivo `.env` recién creado y configure las variables correspondientes. Preste especial atención a `MONGO_URI` y `API_BASE_URL` según el entorno que vaya a iniciar.
 
-### Levantar el proyecto
+## Modos de Ejecución del Proyecto
 
-#### 1. Levantar y crear contenedor
+El despliegue de la aplicación está diseñado bajo un principio de desacoplamiento de infraestructura. Cuenta con dos flujos independientes según el caso de uso:
+
+### Opción A: Modo Desarrollo (Ecosistema Completo Local)
+
+*Ideal para el equipo de desarrollo, pruebas locales o evaluación académica.*
+
+Este comando levanta tanto la API de FastAPI como un contenedor local y aislado de **MongoDB 7**, configurando un volumen de persistencia automático y un sistema de control de arranque (*healthcheck*) para asegurar que la API no inicie hasta que la base de datos esté lista:
 
 ```bash
-# Construye e inicia en segundo plano (detached)
-docker compose -f .devcontainer/docker-compose.yml up -d --build
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
 ```
 
-#### 2. Bajar el contenedor
+### Opción B: Modo Producción / Entrega al Cliente (Solo la API)
+
+*Ideal para el despliegue final en la infraestructura del cliente.*
+
+Si el cliente ya cuenta con su propio clúster de base de datos administrado (local o en la nube), no requiere contenedores de bases de datos redundantes. Asegúrese de colocar la dirección de su base de datos externa en la variable `MONGO_URI` del `.env` y ejecute:
 
 ```bash
-# Detiene los servicios sin borrarlos.
-docker compose -f .devcontainer/docker-compose.yml stop
-
-# Borra contenedores, mantiene volúmenes de datos.
-docker compose -f .devcontainer/docker-compose.yml down
-
-# Esto borra los datos de la base de datos y el contenedor.
-docker compose -f .devcontainer/docker-compose.yml down -v
+docker compose up -d --build
 ```
 
-#### 3. Levantar el contenedor ya creado
+Esto compilará y empaquetará el código fuente de forma estática bajo la imagen inmutable `parse-documents-fast:1.0.0` y levantará **únicamente el servicio de la API** corriendo de forma segura bajo un usuario sin privilegios (`appuser`).
+
+### Gestión y Control de Servicios
+
+Para administrar el ciclo de vida de los contenedores según el modo en el que los haya iniciado, utilice los siguientes comandos:
+
+#### 1. Detener los servicios
+
+Detiene la ejecución del servidor sin eliminar los contenedores de la memoria del sistema:
 
 ```bash
-# En caso de que se haya eliminado el contenedor o eliminado. 
-docker compose -f .devcontainer/docker-compose.yml up -d
 
-# Fuerza a no usar cache o verificar contenedores anteriores y inicar de 0.
-docker compose -f .devcontainer/docker-compose.yml up -d --build
+docker compose stop
+```
 
-# En caso de que el contenedor este guardado.
-docker compose -f .devcontainer/docker-compose.yml start
+#### 2. Apagar y limpiar el entorno
+
+Remueve los contenedores de la memoria RAM del sistema de forma segura (los datos de la base de datos no se perderán gracias a los volúmenes):
+
+```bash
+
+# Si los levantó en Modo Producción:
+docker compose down
+
+# Si los levantó en Modo Desarrollo:
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down
+```
+
+#### 3. Ver registros (Logs) en tiempo real
+
+Si necesita monitorear las peticiones HTTP entrantes o depurar errores internos de la API FastAPI:
+
+```bash
+docker compose logs -f app
+```
+
+#### 4. Limpieza total de base de datos (Solo Desarrollo)
+
+Si durante la etapa de pruebas requiere eliminar por completo la base de datos local y los volúmenes de almacenamiento para iniciar un entorno limpio desde cero:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.dev.yml down -v
 ```
 
 ---

@@ -1,0 +1,31 @@
+# --------------------------------------------------------------
+# --- Plantilla estandar: Para desarrollo local con MongoDB ---
+# --------------------------------------------------------------
+
+# Principio: Self-Contained Development Environment.
+# Se puede borrar si es necesario.
+
+services:
+  # 1. Crear el servicio de base de datos solo para desarrollo local.
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017" # Expuesto localmente para poder usar MongoDB Compass.
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # 2. Modificar el servicio app original para que espere a Mongo de forma local
+  app:
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/ParseDocumentsFast
+
+volumes:
+  mongodb_data:

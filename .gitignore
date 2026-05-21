@@ -1,9 +1,11 @@
 # uv
-uv.lock
 .gitignore
-.vsocde/
+.vscode/
 .agents/
 .skills-lock.json
+
+# Excluir configuraciones locales de desarrollo
+.devcontainer/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
