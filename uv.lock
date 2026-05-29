@@ -222,8 +222,8 @@ wheels = [
 ]
 
 [[package]]
-name = "pdf-manager"
-version = "1.0.0"
+name = "parsedocumentsfast"
+version = "1.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beanie" },
