@@ -6,11 +6,15 @@
 # Se puede borrar si es necesario.
 
 services:
-  # 1. Crear el servicio de base de datos solo para desarrollo local.
   mongodb:
-    image: mongo:7
+    image: mongo:7-jammy
     ports:
-      - "27017:27017" # Expuesto localmente para poder usar MongoDB Compass.
+      - "27017:27017"
+    networks:
+      - utn  # Necesario crear la red primero
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
     volumes:
       - mongodb_data:/data/db
     healthcheck:
@@ -19,13 +23,12 @@ services:
       timeout: 5s
       retries: 5
 
-  # 2. Modificar el servicio app original para que espere a Mongo de forma local
   app:
     depends_on:
       mongodb:
         condition: service_healthy
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/ParseDocumentsFast
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/ParseDocumentsFast?authSource=admin
 
 volumes:
   mongodb_data:
