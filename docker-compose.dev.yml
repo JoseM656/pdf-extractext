@@ -2,16 +2,13 @@
 # --- Plantilla estandar: Para desarrollo local con MongoDB ---
 # --------------------------------------------------------------
 
-# Principio: Self-Contained Development Environment.
-# Se puede borrar si es necesario.
-
 services:
   mongodb:
     image: mongo:7-jammy
     ports:
       - "27017:27017"
     networks:
-      - utn  # Necesario crear la red primero
+      - pdf_network  
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
@@ -29,6 +26,8 @@ services:
         condition: service_healthy
     environment:
       - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/ParseDocumentsFast?authSource=admin
+    networks:
+      - pdf_network  
 
 volumes:
   mongodb_data:

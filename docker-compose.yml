@@ -11,8 +11,8 @@ services:
     env_file:
       - .env
     networks:
-      - utn  # Requerimiento del enunciado
+      - pdf_network  
 
-networks: # usar: "docker network create <nombre>"
-  utn:
-    external: true  
+networks:
+  pdf_network:       
+    external: true
