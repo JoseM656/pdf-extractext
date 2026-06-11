@@ -25,7 +25,8 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/ParseDocumentsFast?authSource=admin
+      - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
     networks:
       - pdf_network  
 
