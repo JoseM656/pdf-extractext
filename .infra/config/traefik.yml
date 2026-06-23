@@ -1,0 +1,25 @@
+global:
+  sendAnonymousUsage: true
+
+api:
+  dashboard: true
+  insecure: false
+
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    watch: true
+    exposedByDefault: false
+  file:
+    filename: /etc/traefik/config.yml
+    watch: true
+
+log:
+  level: INFO
+  format: common
+
+entryPoints:
+  redis:
+    address: ":6379"
+  https:
+    address: ":443"

@@ -5,10 +5,10 @@
 services:
   mongodb:
     image: mongo:7-jammy
-    ports:
-      - "27017:27017"
+  # ports:
+  #  - "27017:27017"
     networks:
-      - pdf_network  
+      - pdf_internal_network  
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${MONGO_ROOT_USERNAME}
       - MONGO_INITDB_ROOT_PASSWORD=${MONGO_ROOT_PASSWORD}
@@ -28,7 +28,8 @@ services:
       - MONGO_URI=mongodb://${MONGO_ROOT_USERNAME}:${MONGO_ROOT_PASSWORD}@mongodb:27017/?authSource=admin
       - MONGO_DB_NAME=${MONGO_DB_NAME}
     networks:
-      - pdf_network  
+      - pdf_internal_network
+      - fast_pdf_network 
 
 volumes:
   mongodb_data:

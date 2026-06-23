@@ -1,0 +1,26 @@
+services:
+  reverse-proxy:
+    image: traefik:v3.5
+    container_name: traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    ports:
+      - "443:443"      # Único puerto de entrada web (HTTPS)
+      - "6379:6379"    # Redis expuesto para dev
+      - "27017:27017"  # Mongo expuesto para dev
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config/config.yml:/etc/traefik/config.yml:ro
+      - ./certs:/etc/certs:ro
+    networks:
+      - fast_pdf_network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik=true"
+
+networks:
+  fast_pdf_network:
+    name: fast_pdf_network
+    driver: bridge

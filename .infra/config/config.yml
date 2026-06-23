@@ -1,0 +1,18 @@
+http:
+  routers:
+    # Router para el Dashboard de Traefik
+    traefik-dashboard:
+      rule: "Host(`api.pdfmanager.local`) && (PathPrefix(`/api`) || PathPrefix(`/dashboard`))"
+      service: "api@internal"  # Servicio nativo de Traefik
+      entryPoints:
+        - https
+      tls:
+        domains:
+          - main: "pdfmanager.local"
+            sans:
+              - "*.pdfmanager.local"
+
+tls:
+  certificates:
+    - certFile: "/etc/certs/pdfmanager.pem"
+      keyFile: "/etc/certs/pdfmanager-key.pem"

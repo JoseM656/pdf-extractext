@@ -11,8 +11,17 @@ services:
     env_file:
       - .env
     networks:
-      - pdf_network  
+          - pdf_internal_network  # Red privada exclusiva para App <-> Mongo
+          - fast_pdf_network       # Red externa compartida con Traefik
+    labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.pdf-app.rule=Host(`api.pdfmanager.local`)"
+        - "traefik.http.routers.pdf-app.entrypoints=https"
+        - "traefik.http.routers.pdf-app.tls=true"
+        - "traefik.http.services.pdf-app.loadbalancer.server.port=8000" 
 
 networks:
-  pdf_network:       
-    external: true
+    pdf_internal_network:
+      driver: bridge
+    fast_pdf_network:
+      external: true

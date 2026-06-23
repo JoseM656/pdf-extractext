@@ -7,6 +7,13 @@
 # Excluir configuraciones locales de desarrollo
 .devcontainer/
 
+# Infraestructura / Traefik
+.infra/certs/*.pem
+.infra/certs/*.key
+.infra/certs/*.crt
+!.infra/certs/.gitkeep
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
