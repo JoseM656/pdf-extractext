@@ -261,6 +261,3 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-
-# Traefik certificates
-traefik/certs/
