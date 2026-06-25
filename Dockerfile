@@ -3,6 +3,12 @@ FROM python:3.12-slim
 # Instalar uv copiando los binarios oficiales.
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 
+# Instalar herramientas de monitoreo antes de sincronizar dependencias.
+# Se hace en una sola capa RUN para no inflar el tamaño de la imagen.
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends htop procps && \
+    rm -rf /var/lib/apt/lists/*
+
 # Directorio de trabajo interno
 WORKDIR /app
 
