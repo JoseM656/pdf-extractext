@@ -3,7 +3,6 @@
 import io
 import logging
 
-
 from pypdf import PdfReader
 
 logging.getLogger("pypdf").setLevel(logging.ERROR)
@@ -16,11 +15,11 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 class PdfExtractor:
     """Extrae texto de archivos PDF desde contenido en memoria."""
 
-    def extract_text(self, source: Path | bytes) -> str:
+    def extract_text(self, content: bytes) -> str:
         """Extrae todo el texto de un PDF.
 
         Args:
-            source: Ruta al archivo PDF (Path) o contenido binario del PDF (bytes).
+            content: Contenido binario del PDF (bytes).
 
         Returns:
             String con el contenido textual del PDF.
