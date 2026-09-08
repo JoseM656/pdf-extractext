@@ -1,11 +1,7 @@
 """Fixtures compartidos para todos los tests."""
 
-import io
-import os
 import sys
-import tempfile
 from pathlib import Path
-from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,21 +11,12 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dev.servers.app import app
 
+
 #Client fixture para test de API
 @pytest.fixture(scope="function")
 def client()-> TestClient:
     """Proporciona un TestClient de FastAPI para tests de integración."""
     return TestClient(app)
-
-
-# Upload directory fixture
-@pytest.fixture(scope="function")
-def temp_upload_dir() -> Generator[Path, None, None]:
-    """Proporciona un directorio temporal para uploads de PDF."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        upload_path = Path(tmpdir) / "uploads"
-        upload_path.mkdir(parents=True, exist_ok=True)
-        yield upload_path
 
 
 # Sample PDF content fixture

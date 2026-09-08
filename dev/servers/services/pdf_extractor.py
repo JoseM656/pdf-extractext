@@ -2,7 +2,6 @@
 
 import io
 import logging
-from pathlib import Path
 
 from pypdf import PdfReader
 
@@ -14,30 +13,20 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 
 
 class PdfExtractor:
-    """Extrae texto de archivos PDF.
+    """Extrae texto de archivos PDF desde contenido en memoria."""
 
-    Acepta tanto rutas en disco (Path) como contenido en memoria (bytes),
-    para poder procesar PDFs sin necesidad de escribirlos temporalmente a disco.
-    """
-
-    def extract_text(self, source: Path | bytes) -> str:
+    def extract_text(self, content: bytes) -> str:
         """Extrae todo el texto de un PDF.
 
         Args:
-            source: Ruta al archivo PDF (Path) o contenido binario del PDF (bytes).
+            content: Contenido binario del PDF (bytes).
 
         Returns:
             String con el contenido textual del PDF.
             Retorna string vacío si no hay texto o hay error.
         """
         try:
-            # Si recibimos bytes, los envolvemos en BytesIO para que PyPDF2
-            # pueda leerlos como si fuera un archivo, sin tocar el disco.
-            if isinstance(source, bytes):
-                file_like = io.BytesIO(source)
-            else:
-                file_like = str(source)
-
+            file_like = io.BytesIO(content)
             reader = PdfReader(file_like)
             text_parts = []
 

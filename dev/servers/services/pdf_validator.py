@@ -4,8 +4,6 @@ Este módulo centraliza las reglas de validación para que tanto
 el CLI como la API REST las reutilicen sin duplicar lógica (DRY).
 """
 
-from pathlib import Path
-
 from dev.config import settings
 
 # Los PDF siempre comienzan con estos bytes ("magic bytes").
@@ -30,35 +28,6 @@ def validate_pdf_bytes(content: bytes, filename: str = "") -> None:
     """
     _check_magic_bytes(content, filename)
     _check_file_size(content, filename)
-
-
-def validate_pdf_path(pdf_path: Path) -> None:
-    """Valida un PDF a partir de su ruta en disco.
-
-    Lee solo los primeros bytes para la validación de formato,
-    y usa el tamaño del filesystem para la validación de tamaño,
-    evitando cargar el archivo completo en memoria innecesariamente.
-
-    Args:
-        pdf_path: Ruta al archivo PDF.
-
-    Raises:
-        PdfValidationError: Si el archivo no es un PDF o supera el tamaño máximo.
-    """
-    # Leemos solo los primeros bytes para verificar el magic number
-    with pdf_path.open("rb") as f:
-        header = f.read(len(PDF_MAGIC_BYTES))
-
-    _check_magic_bytes(header, pdf_path.name)
-
-    # Para el tamaño usamos el filesystem, no cargamos el archivo completo
-    file_size = pdf_path.stat().st_size
-    max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
-    if file_size > max_bytes:
-        raise PdfValidationError(
-            f"El archivo '{pdf_path.name}' supera el tamaño máximo permitido "
-            f"({settings.MAX_FILE_SIZE_MB} MB). Tamaño actual: {file_size / 1024 / 1024:.1f} MB."
-        )
 
 
 def _check_magic_bytes(content: bytes, filename: str) -> None:
