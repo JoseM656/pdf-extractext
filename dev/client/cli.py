@@ -78,6 +78,12 @@ def _cmd_upload(args: argparse.Namespace) -> int:
             print(f"Error de validación: {detail}", file=sys.stderr)
             return 1
 
+        # 422 Unprocessable Entity: PDF corrupto o sin texto extraíble
+        if response.status_code == 422:
+            detail = response.json().get("detail", response.text)
+            print(f"Error: {detail}", file=sys.stderr)
+            return 1
+
         response.raise_for_status()
         data = response.json()
 

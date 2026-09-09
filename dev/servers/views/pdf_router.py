@@ -4,7 +4,11 @@ from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
 from dev.servers.controllers import pdf_controller
-from dev.servers.services.pdf_extractor import PdfExtractor
+from dev.servers.services.pdf_extractor import (
+    EmptyPdfError,
+    PdfExtractionError,
+    PdfExtractor,
+)
 from dev.servers.services.pdf_validator import (
     PdfValidationError,
     calculate_checksum,
@@ -72,7 +76,10 @@ async def create_pdf(
 
     # Extraer el texto mientras los bytes están en memoria.
     extractor = PdfExtractor()
-    extracted_text = extractor.extract_text(content)
+    try:
+        extracted_text = extractor.extract_text(content)
+    except (PdfExtractionError, EmptyPdfError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
     used_title = title or file.filename
     size = len(content)

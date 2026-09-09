@@ -211,6 +211,28 @@ class TestUploadCommand:
             captured = capsys.readouterr()
             assert "validación" in captured.err.lower() or "error" in captured.err.lower()
 
+    def test_upload_shows_error_message_on_422(self, tmp_path: Path, capsys) -> None:
+        """Si el servidor retorna 422 (PDF corrupto o sin texto), debe mostrar el detalle."""
+        pdf_file = tmp_path / "vacio.pdf"
+        pdf_file.write_bytes(b"%PDF-1.4\ncontenido invalido")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 422
+        mock_response.json.return_value = {
+            "detail": "El PDF no contiene texto extraíble."
+        }
+
+        with patch("httpx.post", return_value=mock_response):
+            from dev.client.cli import _cmd_upload
+            import argparse
+
+            args = argparse.Namespace(pdf_file=pdf_file, info=False)
+            result = _cmd_upload(args)
+
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "no contiene texto" in captured.err.lower()
+
 
 class TestListCommand:
     """Tests para el subcomando 'list'."""
