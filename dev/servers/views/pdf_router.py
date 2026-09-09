@@ -1,13 +1,15 @@
 """Router FastAPI — capa de presentación del servidor (HTTP)."""
 
-import hashlib
-
 from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
 from dev.servers.controllers import pdf_controller
 from dev.servers.services.pdf_extractor import PdfExtractor
-from dev.servers.services.pdf_validator import PdfValidationError, validate_pdf_bytes
+from dev.servers.services.pdf_validator import (
+    PdfValidationError,
+    calculate_checksum,
+    validate_pdf_bytes,
+)
 from fastapi.responses import PlainTextResponse
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
@@ -54,9 +56,7 @@ async def create_pdf(
         raise HTTPException(status_code=400, detail=str(e))
 
     # Calcular el checksum SHA-256 del contenido binario.
-    # Es la huella digital del archivo: dos archivos con el mismo hash
-    # tienen exactamente el mismo contenido, sin importar el nombre.
-    checksum = hashlib.sha256(content).hexdigest()
+    checksum = calculate_checksum(content)
 
     # Verificar duplicado antes de cualquier procesamiento costoso.
     # Si el checksum ya existe en la base de datos, el archivo fue subido antes.

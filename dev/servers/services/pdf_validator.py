@@ -4,6 +4,8 @@ Este módulo centraliza las reglas de validación para que tanto
 el CLI como la API REST las reutilicen sin duplicar lógica (DRY).
 """
 
+import hashlib
+
 from dev.config import settings
 
 # Los PDF siempre comienzan con estos bytes ("magic bytes").
@@ -37,6 +39,21 @@ def _check_magic_bytes(content: bytes, filename: str) -> None:
             f"El archivo '{filename}' no es un PDF válido. "
             f"Se esperaba que comenzara con '{PDF_MAGIC_BYTES.decode()}'."
         )
+
+
+def calculate_checksum(content: bytes) -> str:
+    """Calcula el hash SHA-256 del contenido binario.
+
+    Es la huella digital del archivo: dos archivos con el mismo hash
+    tienen exactamente el mismo contenido, sin importar el nombre.
+
+    Args:
+        content: Bytes del archivo.
+
+    Returns:
+        Hash SHA-256 en hexadecimal.
+    """
+    return hashlib.sha256(content).hexdigest()
 
 
 def _check_file_size(content: bytes, filename: str) -> None:
