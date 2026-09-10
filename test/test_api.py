@@ -42,6 +42,50 @@ class TestCreatePdfEndpoint:
         assert response.status_code == 400
         assert "PDF" in response.json()["detail"]
 
+    def test_upload_rejects_corrupt_pdf_with_422(self, client: TestClient):
+        """Un PDF que pasa los magic bytes pero es ilegible devuelve 422."""
+        corrupt_content = b"%PDF-1.4\ncontenido invalido que no es un PDF"
+        response = client.post(
+            "/api/pdfs",
+            files={
+                "file": (
+                    "corrupt.pdf",
+                    io.BytesIO(corrupt_content),
+                    "application/pdf",
+                )
+            },
+            data={"title": "Corrupt Document"},
+        )
+
+        assert response.status_code == 422
+
+    def test_upload_rejects_empty_pdf_with_422(self, client: TestClient):
+        """Un PDF válido pero sin texto extraíble devuelve 422."""
+        empty_content = (
+            b"%PDF-1.4\n"
+            b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            b"2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+            b"3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] "
+            b"/Resources << /Font << /F1 << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> >> >> "
+            b"/Contents 4 0 R >>\nendobj\n"
+            b"4 0 obj\n<< /Length 0 >>\nstream\n"
+            b"endstream\nendobj\n"
+            b"trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n0\n%%EOF\n"
+        )
+        response = client.post(
+            "/api/pdfs",
+            files={
+                "file": (
+                    "empty.pdf",
+                    io.BytesIO(empty_content),
+                    "application/pdf",
+                )
+            },
+            data={"title": "Empty Document"},
+        )
+
+        assert response.status_code == 422
+
     def test_pdf_uses_filename_as_title_when_title_empty(
         self, client: TestClient, sample_pdf_bytes: bytes
     ):

@@ -12,6 +12,14 @@ logging.getLogger("pypdf").setLevel(logging.ERROR)
 # ensuciar los logs del servidor con mensajes que no aportan información accionable.
 
 
+class PdfExtractionError(Exception):
+    """Se lanza cuando el PDF está corrupto o no se puede leer (fallo real)."""
+
+
+class EmptyPdfError(Exception):
+    """Se lanza cuando el PDF es válido pero no contiene texto extraíble."""
+
+
 class PdfExtractor:
     """Extrae texto de archivos PDF desde contenido en memoria."""
 
@@ -23,7 +31,10 @@ class PdfExtractor:
 
         Returns:
             String con el contenido textual del PDF.
-            Retorna string vacío si no hay texto o hay error.
+
+        Raises:
+            PdfExtractionError: Si el PDF está corrupto o no se puede leer.
+            EmptyPdfError: Si el PDF es válido pero no contiene texto.
         """
         try:
             file_like = io.BytesIO(content)
@@ -35,6 +46,13 @@ class PdfExtractor:
                 if page_text:
                     text_parts.append(page_text)
 
-            return "\n".join(text_parts)
-        except Exception:
-            return ""
+            text = "\n".join(text_parts)
+        except Exception as e:
+            raise PdfExtractionError(
+                "No se pudo extraer el texto del PDF: archivo corrupto o ilegible."
+            ) from e
+
+        if not text.strip():
+            raise EmptyPdfError("El PDF no contiene texto extraíble.")
+
+        return text
