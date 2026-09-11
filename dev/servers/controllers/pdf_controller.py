@@ -50,7 +50,7 @@ async def create_pdf(
 
 async def get_pdf_by_checksum(checksum: str) -> Pdf | None:
 """Retorna un PDF existente si su checksum coincide, None en caso contrario."""
-    return await Pdf.find_one(Pdf.checksum == checksum)
+    return await Pdf.find_one({"checksum" : checksum})
 
 
 async def list_pdfs() -> list[Pdf]:
@@ -64,7 +64,7 @@ async def delete_pdf(pdf_id: str) -> None:
     await pdf.delete()
 
 
-async def extract_text(pdf_id: str) -> dict:
+async def extract_text(pdf_id: str) -> str:
 """Retorna el texto extraído de un PDF. Lanza excepción si no existe."""
     pdf = await get_pdf_or_raise(pdf_id)
     return pdf.extracted_text or ""

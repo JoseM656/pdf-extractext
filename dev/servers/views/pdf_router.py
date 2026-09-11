@@ -24,7 +24,7 @@ class PdfResponse(BaseModel):
         from_attributes = True
 
 
-@router.post("", response_model=PdfResponse, status_code=200)
+@router.post("", response_model=PdfResponse, status_code=201)
 async def create_pdf(
     file: UploadFile = File(...),
     title: str = Form(""),
