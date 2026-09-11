@@ -4,7 +4,7 @@ Este módulo contiene la lógica pura sin conocimiento de HTTP ni bases de datos
 Los controllers son stateless y reutilizables tanto desde API REST como desde CLI.
 """
 
-from dev.servers.models.pdf_document import Pdf
+from dev.models.pdf_document import Pdf
 from dev.servers.services.pdf_validator import PdfNotFoundError
 
 
