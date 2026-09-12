@@ -31,6 +31,29 @@ _API_PDFS = f"{settings.API_BASE_URL}/api/pdfs"
 _VERIFY = resolve_ssl_verify(settings.SSL_CERT_FILE)
 
 
+def _pdf_url(pdf_id: str, suffix: str = "") -> str:
+    """Arma la URL de un PDF puntual: `{_API_PDFS}/{pdf_id}{suffix}`.
+ 
+    Cada subcomando que opera sobre un ID (`get`, `delete`, `download`)
+    armaba esta misma concatenación por su cuenta, variando solo el sufijo.
+    """
+    return f"{_API_PDFS}/{pdf_id}{suffix}"
+ 
+ 
+def _report_connection_error(extra_hint: str | None = None) -> int:
+    """Informa que no se pudo conectar con la API y retorna el código de error.
+ 
+    Todos los subcomandos atrapan `httpx.ConnectError` con el mismo mensaje
+    base y el mismo `return 1`; este helper concentra ese bloque en un solo
+    lugar. `extra_hint` permite agregar una línea adicional sin duplicar el
+    resto del mensaje (lo usa `upload`, que sugiere verificar el servidor).
+    """
+    message = f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'."
+    if extra_hint:
+        message = f"{message}\n{extra_hint}"
+    print(message, file=sys.stderr)
+    return 1
+
 # ---------------------------------------------------------------------------
 # Handlers de cada subcomando
 # ---------------------------------------------------------------------------
@@ -99,12 +122,7 @@ def _cmd_upload(args: argparse.Namespace) -> int:
         return 0
 
     except httpx.ConnectError:
-        print(
-            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.\n"
-            f"Verificá que el servidor esté corriendo.",
-            file=sys.stderr,
-        )
-        return 1
+        return _report_connection_error("Verificá que el servidor esté corriendo.")
     except httpx.HTTPStatusError as e:
         print(f"Error del servidor: {e.response.status_code}", file=sys.stderr)
         return 1
@@ -137,11 +155,7 @@ def _cmd_list(_args: argparse.Namespace) -> int:
         return 0
 
     except httpx.ConnectError:
-        print(
-            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
-            file=sys.stderr,
-        )
-        return 1
+        return _report_connection_error()
 
 
 def _cmd_get(args: argparse.Namespace) -> int:
@@ -154,7 +168,7 @@ def _cmd_get(args: argparse.Namespace) -> int:
         Código de salida (0 = éxito, 1 = error).
     """
     try:
-        response = httpx.get(f"{_API_PDFS}/{args.pdf_id}/text", verify=_VERIFY)
+        response = httpx.get(_pdf_url(args.pdf_id, "/text"), verify=_VERIFY)
 
         if response.status_code == 404:
             print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
@@ -172,11 +186,7 @@ def _cmd_get(args: argparse.Namespace) -> int:
         return 0
 
     except httpx.ConnectError:
-        print(
-            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
-            file=sys.stderr,
-        )
-        return 1
+        return _report_connection_error()
 
 
 def _cmd_delete(args: argparse.Namespace) -> int:
@@ -189,7 +199,7 @@ def _cmd_delete(args: argparse.Namespace) -> int:
         Código de salida (0 = éxito, 1 = error).
     """
     try:
-        response = httpx.delete(f"{_API_PDFS}/{args.pdf_id}", verify=_VERIFY)
+        response = httpx.delete(_pdf_url(args.pdf_id), verify=_VERIFY)
 
         if response.status_code == 404:
             print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
@@ -200,12 +210,7 @@ def _cmd_delete(args: argparse.Namespace) -> int:
         return 0
 
     except httpx.ConnectError:
-        print(
-            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
-            file=sys.stderr,
-        )
-        return 1
-
+        return _report_connection_error()
 
 def _cmd_download(args: argparse.Namespace) -> int:
     """Descarga el texto extraído de un PDF y lo guarda en disco.
@@ -217,7 +222,7 @@ def _cmd_download(args: argparse.Namespace) -> int:
         Código de salida (0 = éxito, 1 = error).
     """
     try:
-        response = httpx.get(f"{_API_PDFS}/{args.pdf_id}/download", verify=_VERIFY)
+        response = httpx.get(_pdf_url(args.pdf_id, "/download"), verify=_VERIFY)
 
         if response.status_code == 404:
             print(f"Error: No existe un PDF con ID '{args.pdf_id}'.", file=sys.stderr)
@@ -241,11 +246,7 @@ def _cmd_download(args: argparse.Namespace) -> int:
         return 0
 
     except httpx.ConnectError:
-        print(
-            f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'.",
-            file=sys.stderr,
-        )
-        return 1
+        return _report_connection_error()
 
 # ---------------------------------------------------------------------------
 # Parseo de argumentos
