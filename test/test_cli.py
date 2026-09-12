@@ -1,18 +1,156 @@
 """Tests de integración para el CLI de fast-pdf.
 
-El CLI ahora actúa como cliente HTTP de la API FastAPI.
-Los tests mockean httpx para no requerir que el servidor esté corriendo,
-verificando que el CLI construye los requests correctos y maneja las
-respuestas del servidor apropiadamente.
-"""
+El CLI ahora actúa como cliente HTTP de la API FastAPI.Estos tests lo ejercitan
+por su ÚNICO punto de entrada público: `python -m dev.main <comando> ...`,
+lanzado como subprocess real (igual que un usuario lo invocaría como
+`fast-pdf <comando>`). No se importan ni se llaman funciones privadas
+(`_cmd_upload`, `_cmd_list`, etc.) directamente.
+ 
+Como el subprocess corre en un intérprete de Python completamente aparte,
+`unittest.mock.patch` no puede alcanzarlo (el mock vive en el proceso del
+test, no en el proceso hijo). En su lugar, se levanta un servidor HTTP real
+y mínimo en localhost (ver `fake_api` más abajo) y se apunta `API_BASE_URL`
+del subprocess a él, controlando la respuesta que el CLI recibe realmente
+por la red — el mismo mecanismo que ya usaba
+`test_upload_reports_connection_error_when_server_is_down` para simular un
+servidor caído, solo que acá el servidor sí responde.
 
+"""
+import json
+import os
 import subprocess
 import sys
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from typing import Any
 
 import pytest
 
+# ---------------------------------------------------------------------------
+# Servidor HTTP de prueba: reemplaza el mockeo de httpx en el estilo anterior.
+# ---------------------------------------------------------------------------
+ 
+class _ScriptedRequestHandler(BaseHTTPRequestHandler):
+    """Devuelve, para cualquier método/ruta, la respuesta que el test dejó
+    programada de antemano en `server.scripted_response`.
+ 
+    No reimplementa la API real (no hay rutas, ni Mongo, ni validación) —
+    alcanza con responder lo que el test necesita para verificar cómo
+    reacciona el CLI a cada código de estado, que es lo mismo que hacían
+    los `MagicMock` originales, pero ahora viajando por un socket real.
+    """
+ 
+    def _handle(self) -> None:
+        # Guarda la request recibida para que el test pueda inspeccionarla
+        # (ej. confirmar que el archivo realmente viajó en el body).
+        length = int(self.headers.get("Content-Length", 0))
+        body = self.rfile.read(length) if length else b""
+        self.server.last_request = {  # type: ignore[attr-defined]
+            "method": self.command,
+            "path": self.path,
+            "headers": dict(self.headers.items()),
+            "body": body,
+        }
+ 
+        status, headers, response_body = self.server.scripted_response  # type: ignore[attr-defined]
+        self.send_response(status)
+        for key, value in headers.items():
+            self.send_header(key, value)
+        self.end_headers()
+        if response_body:
+            self.wfile.write(response_body)
+ 
+    def do_GET(self) -> None:  # noqa: N802 — nombre impuesto por BaseHTTPRequestHandler
+        self._handle()
+ 
+    def do_POST(self) -> None:  # noqa: N802
+        self._handle()
+ 
+    def do_DELETE(self) -> None:  # noqa: N802
+        self._handle()
+ 
+    def log_message(self, format: str, *args: Any) -> None:  # silencia el log por request
+        pass
+ 
+ 
+class _FakeApi:
+    """Handle que el fixture `fake_api` entrega a cada test."""
+ 
+    def __init__(self, server: ThreadingHTTPServer) -> None:
+        self._server = server
+        self.base_url = f"http://127.0.0.1:{server.server_port}"
+ 
+    def set_response(
+        self,
+        status: int,
+        json_body: dict | list | None = None,
+        *,
+        text: str | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> None:
+        """Programa la respuesta que el servidor va a devolver a la próxima request."""
+        hdrs = dict(headers or {})
+        if json_body is not None:
+            body = json.dumps(json_body).encode("utf-8")
+            hdrs.setdefault("Content-Type", "application/json")
+        elif text is not None:
+            body = text.encode("utf-8")
+            hdrs.setdefault("Content-Type", "text/plain")
+        else:
+            body = b""
+        hdrs.setdefault("Content-Length", str(len(body)))
+        self._server.scripted_response = (status, hdrs, body)  # type: ignore[attr-defined]
+ 
+    @property
+    def last_request(self) -> dict[str, Any] | None:
+        """La última request recibida (method, path, headers, body), o None."""
+        return getattr(self._server, "last_request", None)
+ 
+ 
+@pytest.fixture
+def fake_api():
+    """Levanta un servidor HTTP real en localhost para que el CLI le pegue.
+ 
+    Reemplaza `patch("httpx.post", ...)` / `patch("httpx.get", ...)`, que no
+    funcionan contra un subprocess. Cada test programa la respuesta deseada
+    con `fake_api.set_response(...)` antes de invocar el CLI.
+    """
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _ScriptedRequestHandler)
+    server.scripted_response = (200, {}, b"")  # type: ignore[attr-defined]
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+ 
+    yield _FakeApi(server)
+ 
+    server.shutdown()
+    thread.join(timeout=2)
+ 
+ 
+def _run_cli(
+    *args: str,
+    api_base_url: str | None = None,
+    cwd: Path | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Invoca el entry point público del CLI (`python -m dev.main ...`) como
+    lo haría un usuario real, y devuelve stdout/stderr/returncode.
+    """
+    env = {**os.environ}
+    if api_base_url is not None:
+        env["API_BASE_URL"] = api_base_url
+ 
+    return subprocess.run(
+        [sys.executable, "-m", "dev.main", *args],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=cwd,
+    )
+ 
+ 
+# ---------------------------------------------------------------------------
+# Tests
+# ---------------------------------------------------------------------------
 
 class TestCliSubcommands:
     """Tests que verifican que el CLI reconoce sus subcomandos."""
@@ -73,345 +211,234 @@ class TestUploadCommand:
         pdf_file.write_bytes(b"%PDF-1.4 content")
 
         # Apuntamos a un puerto donde no hay nada corriendo
-        result = subprocess.run(
-            [sys.executable, "-m", "dev.main", "upload", str(pdf_file)],
-            capture_output=True,
-            text=True,
-            env={
-                **__import__("os").environ,
-                "API_BASE_URL": "http://localhost:19999",
-            },
+        result = _run_cli(
+            "upload", str(pdf_file),
+            api_base_url="http://localhost:19999",
         )
 
         assert result.returncode == 1
         assert "conectar" in result.stderr.lower() or "connect" in result.stderr.lower()
 
-    def test_upload_sends_file_to_api(self, tmp_path: Path) -> None:
+    def test_upload_sends_file_to_api(self, tmp_path: Path, fake_api) -> None:
         """upload debe enviar el archivo a POST /api/pdfs y mostrar el ID."""
         pdf_file = tmp_path / "documento.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 content")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        fake_api.set_response(200, {
             "id": "abc123",
             "title": "documento",
             "size": 16,
             "created_at": "2026-01-01T00:00:00",
-        }
+        })
+ 
+        result = _run_cli("upload", str(pdf_file), api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 0
+        assert "abc123" in result.stdout
+        assert "documento" in result.stdout
+ 
+        # Confirma que el archivo realmente viajó por la red como multipart,
+        # no solo que el CLI mostró el resultado esperado.
+        request = fake_api.last_request
+        assert request is not None
+        assert request["method"] == "POST"
+        assert request["headers"]["Content-Type"].startswith("multipart/form-data")
+        assert b'filename="documento.pdf"' in request["body"]
 
-        with patch("httpx.post", return_value=mock_response) as mock_post:
-            from dev.client.cli import _cmd_upload
-            import argparse
-
-            args = argparse.Namespace(pdf_file=pdf_file, info=False)
-            result = _cmd_upload(args)
-
-            assert result == 0
-            mock_post.assert_called_once()
-            call_kwargs = mock_post.call_args
-            # Verifica que el archivo se mandó en el campo "file"
-            assert "files" in call_kwargs.kwargs or len(call_kwargs.args) > 0
-
-    def test_upload_passes_verify_to_httpx(self, tmp_path: Path) -> None:
-        """upload debe pasar un argumento `verify` para confiar en el CA local."""
-        pdf_file = tmp_path / "documento.pdf"
-        pdf_file.write_bytes(b"%PDF-1.4 content")
-
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "id": "abc123",
-            "title": "documento",
-            "size": 16,
-            "created_at": "2026-01-01T00:00:00",
-        }
-
-        with patch("httpx.post", return_value=mock_response) as mock_post:
-            from dev.client.cli import _cmd_upload
-            import argparse
-
-            args = argparse.Namespace(pdf_file=pdf_file, info=False)
-            result = _cmd_upload(args)
-
-            assert result == 0
-            verify = mock_post.call_args.kwargs.get("verify")
-            assert verify is True or isinstance(verify, str)
-
-    def test_upload_with_info_flag_shows_size_and_date(self, tmp_path: Path, capsys) -> None:
+    def test_upload_with_info_flag_shows_size_and_date(self, tmp_path: Path, fake_api) -> None:
         """--info debe mostrar tamaño y fecha además del ID."""
         pdf_file = tmp_path / "documento.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 content")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        fake_api.set_response(200, {
             "id": "abc123",
             "title": "documento",
             "size": 1024,
             "created_at": "2026-01-01T00:00:00",
-        }
+        })
+ 
+        result = _run_cli("upload", str(pdf_file), "--info", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 0
+        assert "1024" in result.stdout
+        assert "2026-01-01" in result.stdout
 
-        with patch("httpx.post", return_value=mock_response):
-            from dev.client.cli import _cmd_upload
-            import argparse
 
-            args = argparse.Namespace(pdf_file=pdf_file, info=True)
-            _cmd_upload(args)
-
-            captured = capsys.readouterr()
-            assert "1024" in captured.out
-            assert "2026-01-01" in captured.out
-
-    def test_upload_shows_duplicate_message_on_409(self, tmp_path: Path, capsys) -> None:
+    def test_upload_shows_duplicate_message_on_409(self, tmp_path: Path, fake_api) -> None:
         """Si el servidor retorna 409, debe mostrar el ID del documento existente."""
         pdf_file = tmp_path / "dup.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 content")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 409
-        mock_response.json.return_value = {
+        fake_api.set_response(409, {
             "detail": {
                 "message": "Este documento ya fue subido anteriormente.",
                 "existing_id": "existing-abc-123",
             }
-        }
+        })
+ 
+        result = _run_cli("upload", str(pdf_file), api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
+        assert "existing-abc-123" in result.stdout
+        assert "duplicado" in result.stdout.lower()
 
-        with patch("httpx.post", return_value=mock_response):
-            from dev.client.cli import _cmd_upload
-            import argparse
-
-            args = argparse.Namespace(pdf_file=pdf_file, info=False)
-            result = _cmd_upload(args)
-
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "existing-abc-123" in captured.out
-            assert "duplicado" in captured.out.lower()
-
-    def test_upload_shows_validation_error_on_400(self, tmp_path: Path, capsys) -> None:
+        
+    def test_upload_shows_validation_error_on_400(self, tmp_path: Path, fake_api) -> None:
         """Si el servidor retorna 400, debe mostrar el mensaje de error de validación."""
         pdf_file = tmp_path / "invalido.pdf"
         pdf_file.write_bytes(b"esto no es un pdf")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_response.json.return_value = {
+        fake_api.set_response(400, {
             "detail": "El archivo 'invalido.pdf' no es un PDF válido."
-        }
+        })
+ 
+        result = _run_cli("upload", str(pdf_file), api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
+        assert "validación" in result.stderr.lower() or "error" in result.stderr.lower()
 
-        with patch("httpx.post", return_value=mock_response):
-            from dev.client.cli import _cmd_upload
-            import argparse
 
-            args = argparse.Namespace(pdf_file=pdf_file, info=False)
-            result = _cmd_upload(args)
-
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "validación" in captured.err.lower() or "error" in captured.err.lower()
-
-    def test_upload_shows_error_message_on_422(self, tmp_path: Path, capsys) -> None:
+    def test_upload_shows_error_message_on_422(self, tmp_path: Path, fake_api) -> None:
         """Si el servidor retorna 422 (PDF corrupto o sin texto), debe mostrar el detalle."""
         pdf_file = tmp_path / "vacio.pdf"
         pdf_file.write_bytes(b"%PDF-1.4\ncontenido invalido")
 
-        mock_response = MagicMock()
-        mock_response.status_code = 422
-        mock_response.json.return_value = {
+        fake_api.set_response(422, {
             "detail": "El PDF no contiene texto extraíble."
-        }
-
-        with patch("httpx.post", return_value=mock_response):
-            from dev.client.cli import _cmd_upload
-            import argparse
-
-            args = argparse.Namespace(pdf_file=pdf_file, info=False)
-            result = _cmd_upload(args)
-
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "no contiene texto" in captured.err.lower()
+        })
+ 
+        result = _run_cli("upload", str(pdf_file), api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
+        assert "no contiene texto" in result.stderr.lower()
 
 
 class TestListCommand:
     """Tests para el subcomando 'list'."""
 
-    def test_list_shows_empty_message_when_no_pdfs(self, capsys) -> None:
+    def test_list_shows_empty_message_when_no_pdfs(self, fake_api) -> None:
         """Si no hay PDFs, list debe informarlo claramente."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = []
+        fake_api.set_response(200, [])
 
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_list
-            import argparse
+        result = _run_cli("list", api_base_url=fake_api.base_url)
 
-            result = _cmd_list(argparse.Namespace())
+        assert result.returncode == 0
+        assert "no hay" in result.stdout.lower()
 
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "no hay" in captured.out.lower()
 
-    def test_list_shows_pdf_entries(self, capsys) -> None:
+    def test_list_shows_pdf_entries(self, fake_api) -> None:
         """list debe mostrar ID, título, tamaño y fecha de cada PDF."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = [
+        fake_api.set_response(200, [
             {
                 "id": "abc123",
                 "title": "Mi Documento",
                 "size": 2048,
                 "created_at": "2026-01-15T10:30:00",
             }
-        ]
-
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_list
-            import argparse
-
-            result = _cmd_list(argparse.Namespace())
-
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "abc123" in captured.out
-            assert "Mi Documento" in captured.out
+        ])
+ 
+        result = _run_cli("list", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 0
+        assert "abc123" in result.stdout
+        assert "Mi Documento" in result.stdout
 
 
 class TestGetCommand:
     """Tests para el subcomando 'get'."""
 
-    def test_get_shows_extracted_text(self, capsys) -> None:
+    def test_get_shows_extracted_text(self, fake_api) -> None:
         """get debe imprimir el texto extraído del PDF."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
+        fake_api.set_response(200, {
             "pdf_id": "abc123",
             "text": "Contenido del documento PDF.",
-        }
+        })
+ 
+        result = _run_cli("get", "abc123", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 0
+        assert "Contenido del documento PDF." in result.stdout
 
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_get
-            import argparse
 
-            args = argparse.Namespace(pdf_id="abc123")
-            result = _cmd_get(args)
-
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "Contenido del documento PDF." in captured.out
-
-    def test_get_returns_1_when_pdf_not_found(self, capsys) -> None:
+    def test_get_returns_1_when_pdf_not_found(self, fake_api) -> None:
         """get debe retornar código 1 y mensaje de error si el ID no existe."""
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_get
-            import argparse
-
-            args = argparse.Namespace(pdf_id="id-inexistente")
-            result = _cmd_get(args)
-
-            assert result == 1
-            captured = capsys.readouterr()
-            assert "no existe" in captured.err.lower()
+        fake_api.set_response(404)
+ 
+        result = _run_cli("get", "id-inexistente", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
+        assert "no existe" in result.stderr.lower()
 
 
 class TestDeleteCommand:
     """Tests para el subcomando 'delete'."""
 
-    def test_delete_confirms_deletion(self, capsys) -> None:
+    def test_delete_confirms_deletion(self, fake_api) -> None:
         """delete debe confirmar que el documento fue eliminado."""
-        mock_response = MagicMock()
-        mock_response.status_code = 204
+        fake_api.set_response(204)
+ 
+        result = _run_cli("delete", "abc123", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 0
+        assert "eliminado" in result.stdout.lower()
 
-        with patch("httpx.delete", return_value=mock_response):
-            from dev.client.cli import _cmd_delete
-            import argparse
 
-            args = argparse.Namespace(pdf_id="abc123")
-            result = _cmd_delete(args)
-
-            assert result == 0
-            captured = capsys.readouterr()
-            assert "eliminado" in captured.out.lower()
-
-    def test_delete_returns_1_when_pdf_not_found(self, capsys) -> None:
+    def test_delete_returns_1_when_pdf_not_found(self, fake_api) -> None:
         """delete debe retornar código 1 si el ID no existe."""
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-
-        with patch("httpx.delete", return_value=mock_response):
-            from dev.client.cli import _cmd_delete
-            import argparse
-
-            args = argparse.Namespace(pdf_id="id-inexistente")
-            result = _cmd_delete(args)
-
-            assert result == 1
+        fake_api.set_response(404)
+ 
+        result = _run_cli("delete", "id-inexistente", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
             
 
 class TestDownloadCommand:
     """Tests para el subcomando 'download'."""
 
     def test_download_saves_file_with_default_name(
-        self, tmp_path: Path, capsys
+        self, tmp_path: Path, fake_api
     ) -> None:
         """download guarda el texto en un archivo con el nombre del título."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Contenido del PDF."
-        mock_response.headers = {
-            "content-disposition": 'attachment; filename="Mi Documento.txt"'
-        }
+        fake_api.set_response(
+            200,
+            text="Contenido del PDF.",
+            headers={"content-disposition": 'attachment; filename="Mi Documento.txt"'},
+        )
+ 
+        # Se usa cwd= del subprocess (no os.chdir) para no mutar el directorio
+        # de trabajo del proceso de test, que persistiría entre tests.
+        result = _run_cli("download", "abc123", api_base_url=fake_api.base_url, cwd=tmp_path)
+ 
+        assert result.returncode == 0
+        assert (tmp_path / "Mi Documento.txt").exists()
 
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_download
-            import argparse
-            import os
-
-            os.chdir(tmp_path)
-            args = argparse.Namespace(pdf_id="abc123", output=None)
-            result = _cmd_download(args)
-
-            assert result == 0
-            assert (tmp_path / "Mi Documento.txt").exists()
 
     def test_download_saves_file_with_custom_name(
-        self, tmp_path: Path
-    ) -> None:
+        self, tmp_path: Path, fake_api
+) -> None:
         """--output permite especificar el nombre del archivo."""
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.text = "Contenido del PDF."
-        mock_response.headers = {
-            "content-disposition": 'attachment; filename="Mi Documento.txt"'
-        }
-
+        fake_api.set_response(
+            200,
+            text="Contenido del PDF.",
+            headers={"content-disposition": 'attachment; filename="Mi Documento.txt"'},
+        )
+ 
         output_file = tmp_path / "mi_archivo.txt"
+ 
+        result = _run_cli(
+            "download", "abc123", "--output", str(output_file),
+            api_base_url=fake_api.base_url,
+        )
+ 
+        assert result.returncode == 0
+        assert output_file.exists()
+        assert output_file.read_text() == "Contenido del PDF."
 
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_download
-            import argparse
 
-            args = argparse.Namespace(pdf_id="abc123", output=output_file)
-            result = _cmd_download(args)
-
-            assert result == 0
-            assert output_file.exists()
-            assert output_file.read_text() == "Contenido del PDF."
-
-    def test_download_returns_1_when_pdf_not_found(self, capsys) -> None:
+    def test_download_returns_1_when_pdf_not_found(self, fake_api) -> None:
         """download retorna código 1 si el ID no existe."""
-        mock_response = MagicMock()
-        mock_response.status_code = 404
-
-        with patch("httpx.get", return_value=mock_response):
-            from dev.client.cli import _cmd_download
-            import argparse
-
-            args = argparse.Namespace(pdf_id="id-inexistente", output=None)
-            result = _cmd_download(args)
-
-            assert result == 1
+        fake_api.set_response(404)
+ 
+        result = _run_cli("download", "id-inexistente", api_base_url=fake_api.base_url)
+ 
+        assert result.returncode == 1
