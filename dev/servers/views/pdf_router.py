@@ -1,17 +1,20 @@
-"""Endpoints HTTP de la API FastAPI.
+"""Router FastAPI — capa de presentación del servidor (HTTP)."""
 
-Aquí se define solo la lógica de HTTP: parseo de requests, traducciones a respuestas,
-códigos de estado. La lógica de negocio puro está en los controllers.
-"""
-
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 
 from dev.servers.controllers import pdf_controller
-from dev.servers.services.pdf_validator import (
-    PdfNotFoundError,
-    PdfValidationError,
+from dev.servers.services.pdf_extractor import (
+    EmptyPdfError,
+    PdfExtractionError,
+    PdfExtractor,
 )
+from dev.servers.services.pdf_validator import (
+    PdfValidationError,
+    calculate_checksum,
+    validate_pdf_bytes,
+)
+from fastapi.responses import PlainTextResponse
 
 router = APIRouter(prefix="/api/pdfs", tags=["pdfs"])
 
@@ -21,61 +24,127 @@ class PdfResponse(BaseModel):
     title: str
     description: str | None
     size: int
+    checksum: str | None
     created_at: str
 
-    class Config:
-        from_attributes = True
+
+def _to_response(pdf) -> PdfResponse:
+    """Convierte un documento Pdf al esquema de respuesta HTTP."""
+    return PdfResponse(
+        id=str(pdf.id),
+        title=pdf.title,
+        description=pdf.description,
+        size=pdf.size,
+        checksum=pdf.checksum,
+        created_at=pdf.created_at.isoformat(),
+    )
 
 
-@router.post("", response_model=PdfResponse, status_code=201)
+@router.post("", response_model=PdfResponse, status_code=200)
 async def create_pdf(
     file: UploadFile = File(...),
     title: str = Form(""),
     description: str | None = Form(None),
 ):
-    """Sube un PDF nuevo a la base de datos."""
+    """Sube un archivo PDF, lo valida, extrae su texto y lo registra en la base de datos.
+
+    El archivo NO se persiste en disco en ningún momento: se lee a memoria,
+    se valida, se extrae el texto y solo ese resultado se guarda en MongoDB.
+    Retorna HTTP 409 si el contenido del archivo ya fue subido anteriormente.
+    """
+    # Leer el contenido completo en memoria de una sola vez.
+    content: bytes = await file.read()
+
+    # Validar formato real (magic bytes %PDF-) y tamaño máximo.
     try:
-        content = await file.read()
-        pdf = await pdf_controller.create_pdf(
-            title=title or file.filename,
-            description=description,
-            content=content,
-            filename=file.filename,
-        )
-        return pdf
+        validate_pdf_bytes(content, file.filename or "")
     except PdfValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    # Calcular el checksum SHA-256 del contenido binario.
+    checksum = calculate_checksum(content)
+
+    # Verificar duplicado antes de cualquier procesamiento costoso.
+    # Si el checksum ya existe en la base de datos, el archivo fue subido antes.
+    existing = await pdf_controller.get_pdf_by_checksum(checksum)
+    if existing is not None:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "Este documento ya fue subido anteriormente.",
+                "existing_id": str(existing.id),
+            },
+        )
+
+    # Extraer el texto mientras los bytes están en memoria.
+    extractor = PdfExtractor()
+    try:
+        extracted_text = extractor.extract_text(content)
+    except (PdfExtractionError, EmptyPdfError) as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    used_title = title or file.filename
+    size = len(content)
+
+    pdf = await pdf_controller.create_pdf(
+        title=used_title,
+        description=description,
+        size=size,
+        extracted_text=extracted_text,
+        checksum=checksum,
+    )
+    return _to_response(pdf)
 
 
 @router.get("", response_model=list[PdfResponse])
 async def list_pdfs():
-    """Lista todos los PDFs."""
-    return await pdf_controller.list_pdfs()
+    """Retorna todos los PDFs registrados."""
+    pdfs = await pdf_controller.list_pdfs()
+    return [_to_response(p) for p in pdfs]
 
 
 @router.get("/{pdf_id}", response_model=PdfResponse)
 async def get_pdf(pdf_id: str):
-    """Obtiene un PDF por ID."""
+    """Retorna un PDF por su ID."""
     try:
-        return await pdf_controller.get_pdf_or_raise(pdf_id)
-    except PdfNotFoundError as e:
+        pdf = await pdf_controller.get_pdf(pdf_id)
+    except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    return _to_response(pdf)
 
 
 @router.delete("/{pdf_id}", status_code=204)
 async def delete_pdf(pdf_id: str):
-    """Elimina un PDF."""
+    """Elimina un PDF de la base de datos."""
     try:
         await pdf_controller.delete_pdf(pdf_id)
-    except PdfNotFoundError as e:
+    except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/{pdf_id}/text")
 async def extract_text(pdf_id: str):
-    """Extrae el texto de un PDF."""
+    """Extrae y retorna el texto de un PDF."""
     try:
-        text = await pdf_controller.get_pdf_text(pdf_id)
-        return {"pdf_id": pdf_id, "text": text}
-    except PdfNotFoundError as e:
+        return await pdf_controller.extract_text(pdf_id)
+    except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+ 
+    
+@router.get("/{pdf_id}/download", response_class=PlainTextResponse)
+async def download_text(pdf_id: str):
+    """Descarga el texto extraído de un PDF como archivo .txt."""
+    try:
+        pdf = await pdf_controller.get_pdf(pdf_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    text = pdf.extracted_text or ""
+    filename = f"{pdf.title}.txt"
+
+    return PlainTextResponse(
+        content=text,
+        headers={
+            "Content-Disposition": f'attachment; filename="{filename}"'
+        }
+    )

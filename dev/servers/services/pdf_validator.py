@@ -4,11 +4,10 @@ Este módulo centraliza las reglas de validación para que tanto
 el CLI como la API REST las reutilicen sin duplicar lógica (DRY).
 """
 
+import hashlib
+
 from dev.config import settings
 
-# Los PDF siempre comienzan con estos bytes ("magic bytes").
-# Es la forma estándar de verificar el formato real del archivo,
-# independientemente de la extensión que tenga el nombre.
 PDF_MAGIC_BYTES = b"%PDF-"
 
 
@@ -18,6 +17,11 @@ class PdfValidationError(ValueError):
 
 class PdfNotFoundError(ValueError):
     """Excepción que se lanza cuando un PDF no existe en la base de datos."""
+
+
+def calculate_checksum(content: bytes) -> str:
+    """Calcula el checksum SHA-256 del contenido binario."""
+    return hashlib.sha256(content).hexdigest()
 
 
 def validate_pdf_bytes(content: bytes, filename: str = "") -> None:
