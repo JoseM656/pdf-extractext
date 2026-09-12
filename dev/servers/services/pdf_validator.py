@@ -8,14 +8,20 @@ import hashlib
 
 from dev.config import settings
 
-# Los PDF siempre comienzan con estos bytes ("magic bytes").
-# Es la forma estándar de verificar el formato real del archivo,
-# independientemente de la extensión que tenga el nombre.
 PDF_MAGIC_BYTES = b"%PDF-"
 
 
 class PdfValidationError(ValueError):
     """Excepción que se lanza cuando un archivo no supera la validación."""
+
+
+class PdfNotFoundError(ValueError):
+    """Excepción que se lanza cuando un PDF no existe en la base de datos."""
+
+
+def calculate_checksum(content: bytes) -> str:
+    """Calcula el checksum SHA-256 del contenido binario."""
+    return hashlib.sha256(content).hexdigest()
 
 
 def validate_pdf_bytes(content: bytes, filename: str = "") -> None:
@@ -41,21 +47,6 @@ def _check_magic_bytes(content: bytes, filename: str) -> None:
         )
 
 
-def calculate_checksum(content: bytes) -> str:
-    """Calcula el hash SHA-256 del contenido binario.
-
-    Es la huella digital del archivo: dos archivos con el mismo hash
-    tienen exactamente el mismo contenido, sin importar el nombre.
-
-    Args:
-        content: Bytes del archivo.
-
-    Returns:
-        Hash SHA-256 en hexadecimal.
-    """
-    return hashlib.sha256(content).hexdigest()
-
-
 def _check_file_size(content: bytes, filename: str) -> None:
     """Verifica que el contenido no supere el tamaño máximo configurado."""
     max_bytes = settings.MAX_FILE_SIZE_MB * 1024 * 1024
@@ -65,3 +56,4 @@ def _check_file_size(content: bytes, filename: str) -> None:
             f"({settings.MAX_FILE_SIZE_MB} MB). "
             f"Tamaño actual: {len(content) / 1024 / 1024:.1f} MB."
         )
+        

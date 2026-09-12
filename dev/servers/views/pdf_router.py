@@ -24,6 +24,7 @@ class PdfResponse(BaseModel):
     title: str
     description: str | None
     size: int
+    checksum: str | None
     created_at: str
 
 
@@ -34,6 +35,7 @@ def _to_response(pdf) -> PdfResponse:
         title=pdf.title,
         description=pdf.description,
         size=pdf.size,
+        checksum=pdf.checksum,
         created_at=pdf.created_at.isoformat(),
     )
 
