@@ -9,14 +9,20 @@ from fastapi.testclient import TestClient
 # Configurar PYTHONPATH para importar dev
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from dev.servers.app import app
+from dev.repositories.in_memory_pdf_repository import InMemoryPdfRepository
+from dev.servers.app import create_app
 
 
 #Client fixture para test de API
 @pytest.fixture(scope="function")
 def client()-> TestClient:
-    """Proporciona un TestClient de FastAPI para tests de integración."""
-    return TestClient(app)
+    """Proporciona un TestClient de FastAPI para tests de integración.
+
+    Usa un repositorio in-memory para no depender de una base MongoDB real.
+    """
+    app = create_app(InMemoryPdfRepository())
+    with TestClient(app) as test_client:
+        yield test_client
 
 
 # Sample PDF content fixture
