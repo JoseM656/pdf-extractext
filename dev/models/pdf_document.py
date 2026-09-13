@@ -1,27 +1,27 @@
-from typing import Annotated
+"""Entidad de dominio para documentos PDF.
 
-from beanie import Document, Indexed
+Esta entidad es independiente de la persistencia: no conoce Beanie ni MongoDB.
+Quien persiste son los adaptadores del puerto PdfRepository.
+"""
+
 from datetime import datetime
-from pydantic import Field
+
+from pydantic import BaseModel, Field
 
 
-class Pdf(Document):
+class PdfDocument(BaseModel):
+    """Documento PDF tal como lo maneja la lógica de negocio."""
+
+    id: str | None = None
     title: str
     description: str | None = None
     size: int
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     # Texto extraído del PDF en el momento del upload.
-    # Se persiste aquí para no necesitar el archivo original después.
     # None significa que la extracción no se realizó o no produjo resultado.
     extracted_text: str | None = None
 
-    # SHA-256 del contenido binario del archivo.
-    # Actúa como huella digital del contenido real, independiente del nombre.
-    # Se usa para detectar duplicados antes de persistir un nuevo documento.
-    # Annotated + Indexed es la forma correcta de declarar índices en Beanie
-    # manteniendo compatibilidad con el sistema de tipos de Python.
-    checksum: Annotated[str, Indexed(unique=True)] | None = None
-
-    class Settings:
-        name = "pdfs"
+    # SHA-256 del contenido binario del archivo. Actúa como huella digital
+    # del contenido real y se usa para detectar duplicados.
+    checksum: str | None = None

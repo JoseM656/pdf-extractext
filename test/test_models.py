@@ -1,16 +1,18 @@
-"""Tests para el modelo Pdf (documento Beanie/MongoDB)."""
+"""Tests para la entidad de dominio PdfDocument."""
 
 import pytest
 from datetime import datetime
-from dev.models.pdf_document import Pdf
+from pydantic import ValidationError
+
+from dev.models.pdf_document import PdfDocument
 
 
 class TestPdfDocument:
-    """Tests para el documento Pdf de MongoDB."""
+    """Tests para la entidad de dominio PdfDocument (independiente de Mongo)."""
 
     def test_pdf_can_be_instantiated_with_valid_data(self):
         """Un PDF puede ser instanciado con datos válidos."""
-        pdf = Pdf(
+        pdf = PdfDocument(
             title="Test PDF",
             description="Test description",
             size=1024,
@@ -24,42 +26,44 @@ class TestPdfDocument:
         """El campo created_at se asigna automáticamente al instanciar un PDF."""
         before_creation = datetime.utcnow()
 
-        pdf = Pdf(title="Test PDF", size=1024)
+        pdf = PdfDocument(title="Test PDF", size=1024)
 
         assert pdf.created_at is not None
         assert pdf.created_at >= before_creation
 
     def test_pdf_description_is_optional(self):
         """El campo description es opcional y puede ser None."""
-        pdf = Pdf(title="Test PDF", size=1024)
+        pdf = PdfDocument(title="Test PDF", size=1024)
 
         assert pdf.description is None
 
-    def test_pdf_collection_name_is_pdfs(self):
-        """El documento se persiste en la colección 'pdfs'."""
-        assert Pdf.Settings.name == "pdfs"
+    def test_pdf_id_defaults_to_none(self):
+        """El campo id es None hasta que el repositorio lo asigna al persistir."""
+        pdf = PdfDocument(title="Test PDF", size=1024)
+
+        assert pdf.id is None
 
     def test_pdf_title_is_required(self):
         """El campo title es obligatorio."""
-        with pytest.raises(Exception):
-            Pdf(size=1024)
+        with pytest.raises(ValidationError):
+            PdfDocument(size=1024)
 
     def test_pdf_size_is_required(self):
         """El campo size es obligatorio."""
-        with pytest.raises(Exception):
-            Pdf(title="Test PDF")
+        with pytest.raises(ValidationError):
+            PdfDocument(title="Test PDF")
 
     # --- Tests para campos agregados en issues #15 y #12 ---
 
     def test_pdf_extracted_text_is_optional(self):
         """El campo extracted_text es opcional y por defecto None."""
-        pdf = Pdf(title="Test PDF", size=1024)
+        pdf = PdfDocument(title="Test PDF", size=1024)
 
         assert pdf.extracted_text is None
 
     def test_pdf_extracted_text_can_be_set(self):
         """El campo extracted_text puede almacenar texto extraído."""
-        pdf = Pdf(
+        pdf = PdfDocument(
             title="Test PDF",
             size=1024,
             extracted_text="Contenido del PDF extraído",
@@ -69,14 +73,14 @@ class TestPdfDocument:
 
     def test_pdf_checksum_is_optional(self):
         """El campo checksum es opcional y por defecto None."""
-        pdf = Pdf(title="Test PDF", size=1024)
+        pdf = PdfDocument(title="Test PDF", size=1024)
 
         assert pdf.checksum is None
 
     def test_pdf_checksum_can_be_set(self):
         """El campo checksum puede almacenar un hash SHA-256."""
         sha256_hash = "a" * 64
-        pdf = Pdf(
+        pdf = PdfDocument(
             title="Test PDF",
             size=1024,
             checksum=sha256_hash,

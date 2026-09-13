@@ -140,6 +140,9 @@ class TestListPdfsEndpoint:
         self, client: TestClient, sample_pdf_bytes: bytes
     ):
         """Devuelve PDFs ordenados por fecha"""
+        # El segundo PDF difiere en contenido para que su checksum sea distinto
+        # (con el mismo contenido el endpoint lo detectaría como duplicado).
+        second_pdf_bytes = sample_pdf_bytes + b"\n% segundo documento\n"
         client.post(
             "/api/pdfs",
             files={"file": ("first.pdf", io.BytesIO(sample_pdf_bytes), "application/pdf")},
@@ -147,7 +150,7 @@ class TestListPdfsEndpoint:
         )
         client.post(
             "/api/pdfs",
-            files={"file": ("second.pdf", io.BytesIO(sample_pdf_bytes), "application/pdf")},
+            files={"file": ("second.pdf", io.BytesIO(second_pdf_bytes), "application/pdf")},
             data={"title": "Second PDF"},
         )
 
@@ -186,7 +189,7 @@ class TestGetPdfEndpoint:
         response = client.get("/api/pdfs/000000000000000000000000")
 
         assert response.status_code == 404
-        assert "Not found" in response.json()["detail"]
+        assert "No existe" in response.json()["detail"]
 
 
 class TestDeletePdfEndpoint:
@@ -213,7 +216,7 @@ class TestDeletePdfEndpoint:
         response = client.delete("/api/pdfs/000000000000000000000000")
 
         assert response.status_code == 404
-        assert "Not found" in response.json()["detail"]
+        assert "No existe" in response.json()["detail"]
 
 
 class TestExtractTextEndpoint:
@@ -242,7 +245,7 @@ class TestExtractTextEndpoint:
         response = client.get("/api/pdfs/000000000000000000000000/text")
 
         assert response.status_code == 404
-        assert "Not found" in response.json()["detail"]
+        assert "No existe" in response.json()["detail"]
         
 
 class TestDownloadEndpoint:

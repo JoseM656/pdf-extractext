@@ -21,13 +21,13 @@ class TestMainEntryPoint:
         pdf_file = tmp_path / "test.pdf"
         pdf_file.write_bytes(b"%PDF-1.4 fake pdf content")
 
-        # Act: Ejecutar main.py con un archivo PDF
+        # Act: Ejecutar main.py con el subcomando upload
         result = subprocess.run(
-            [sys.executable, "-m", "dev.main", str(pdf_file)],
+            [sys.executable, "-m", "dev.main", "upload", str(pdf_file)],
             capture_output=True,
             text=True,
         )
 
         # Assert: No debe fallar por errores de importación (código 2)
-        # Puede fallar por archivo no encontrado o MongoDB, pero no por import
+        # Puede fallar por archivo no encontrado o conexión, pero no por import
         assert result.returncode != 2, f"Error de importación: {result.stderr}"
