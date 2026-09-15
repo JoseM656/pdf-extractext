@@ -8,7 +8,13 @@ REST como desde un CLI.
 
 from dev.models.pdf_document import PdfDocument
 from dev.repositories.pdf_repository import PdfRepository
-from dev.servers.services.pdf_validator import PdfNotFoundError
+from dev.servers.services.pdf_extractor import PdfExtractor
+from dev.servers.services.pdf_validator import (
+    DuplicatePdfError,
+    PdfNotFoundError,
+    calculate_checksum,
+    validate_pdf_bytes,
+)
 
 
 async def get_pdf(repository: PdfRepository, pdf_id: str) -> PdfDocument:
@@ -48,6 +54,34 @@ async def create_pdf(
     )
     return await repository.save(pdf)
 
+
+async def submit_pdf(
+    repository: PdfRepository,
+    content: bytes,
+    filename: str,
+    title: str | None,
+    description: str | None,
+) -> PdfDocument:
+    """Orquesta el flujo completo de subida de un PDF."""
+
+    validate_pdf_bytes(content, filename)
+ 
+    checksum = calculate_checksum(content)
+ 
+    existing = await get_pdf_by_checksum(repository, checksum)
+    if existing is not None:
+        raise DuplicatePdfError(existing_id=str(existing.id))
+ 
+    extracted_text = PdfExtractor().extract_text(content)
+ 
+    return await create_pdf(
+        repository,
+        title=title or filename,
+        description=description,
+        size=len(content),
+        extracted_text=extracted_text,
+        checksum=checksum,
+    )
 
 async def list_pdfs(repository: PdfRepository) -> list[PdfDocument]:
     """Retorna todos los PDFs ordenados por fecha de creación descendente."""
