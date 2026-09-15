@@ -125,6 +125,34 @@ class TestCreatePdfEndpoint:
         data = response.json()
         assert data["title"] == "Custom Title"
 
+    def test_upload_rejects_duplicate_content_with_409(
+        self, client: TestClient, sample_pdf_bytes: bytes
+    ):
+        """Subir el mismo contenido dos veces devuelve 409 con el id existente"""
+        first_response = client.post(
+            "/api/pdfs",
+            files={
+                "file": ("original.pdf", io.BytesIO(sample_pdf_bytes), "application/pdf")
+            },
+            data={"title": "Original"},
+        )
+        assert first_response.status_code == 200
+        existing_id = first_response.json()["id"]
+ 
+        # Mismo contenido binario, distinto nombre de archivo: el duplicado
+        # se detecta por checksum del contenido, no por el nombre.
+        second_response = client.post(
+            "/api/pdfs",
+            files={
+                "file": ("copia.pdf", io.BytesIO(sample_pdf_bytes), "application/pdf")
+            },
+            data={"title": "Copia"},
+        )
+ 
+        assert second_response.status_code == 409
+        detail = second_response.json()["detail"]
+        assert detail["existing_id"] == existing_id
+
 
 class TestListPdfsEndpoint:
     """Tests para el endpoint GET /api/pdfs."""
