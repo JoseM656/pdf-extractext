@@ -7,15 +7,6 @@ from dev.repositories.mongo_pdf_repository import MongoPdfRepository
 from dev.repositories.pdf_repository import PdfRepository
 from dev.servers.views.pdf_router import router
 
-"""
-Este archivo originalmente era main.py, pero no corresponde que sea la entrada del programa,
-ni le corresponde el nombre.
-
-Por lo tanto, se movio el entry ponit a /dev y se dejo la logica de flaskAPI que si corresponde.
-
-El nombre app.py era el que sonaba mejor, se puede cambiar.
-"""
-
 
 def create_app(repository: PdfRepository | None = None) -> FastAPI:
     if repository is None:

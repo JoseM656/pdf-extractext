@@ -19,12 +19,7 @@ class PdfNotFoundError(ValueError):
     """Excepción que se lanza cuando un PDF no existe en la base de datos."""
 
 class DuplicatePdfError(ValueError):
-    """Excepción que se lanza cuando ya existe un PDF con el mismo checksum.
- 
-    Guarda el `existing_id` del documento ya registrado para que quien
-    atrape la excepción (el router) pueda informarlo sin tener que volver
-    a consultar el repositorio.
-    """
+    """Excepción que se lanza cuando ya existe un PDF con el mismo checksum."""
  
     def __init__(self, existing_id: str) -> None:
         self.existing_id = existing_id

@@ -1,10 +1,6 @@
 """
 CLI entry-point para fast-pdf.
 
-El CLI actúa como cliente HTTP delgado de la API FastAPI.
-Toda la lógica de negocio (validación, extracción, checksum, persistencia)
-vive en el servidor — el CLI solo serializa argumentos y muestra respuestas.
-
 Uso:
     fast-pdf upload archivo.pdf
     fast-pdf upload archivo.pdf --info
@@ -32,22 +28,12 @@ _VERIFY = resolve_ssl_verify(settings.SSL_CERT_FILE)
 
 
 def _pdf_url(pdf_id: str, suffix: str = "") -> str:
-    """Arma la URL de un PDF puntual: `{_API_PDFS}/{pdf_id}{suffix}`.
- 
-    Cada subcomando que opera sobre un ID (`get`, `delete`, `download`)
-    armaba esta misma concatenación por su cuenta, variando solo el sufijo.
-    """
+    """Arma la URL de un PDF puntual: `{_API_PDFS}/{pdf_id}{suffix}`."""
     return f"{_API_PDFS}/{pdf_id}{suffix}"
  
  
 def _report_connection_error(extra_hint: str | None = None) -> int:
-    """Informa que no se pudo conectar con la API y retorna el código de error.
- 
-    Todos los subcomandos atrapan `httpx.ConnectError` con el mismo mensaje
-    base y el mismo `return 1`; este helper concentra ese bloque en un solo
-    lugar. `extra_hint` permite agregar una línea adicional sin duplicar el
-    resto del mensaje (lo usa `upload`, que sugiere verificar el servidor).
-    """
+    """Informa que no se pudo conectar con la API y retorna el código de error."""
     message = f"Error: No se pudo conectar con la API en '{settings.API_BASE_URL}'."
     if extra_hint:
         message = f"{message}\n{extra_hint}"
@@ -60,9 +46,6 @@ def _report_connection_error(extra_hint: str | None = None) -> int:
 
 def _cmd_upload(args: argparse.Namespace) -> int:
     """Sube un archivo PDF a la API.
-
-    Delega en el servidor toda la lógica: validación de formato, magic bytes,
-    tamaño, detección de duplicados por checksum y extracción de texto.
 
     Args:
         args: Namespace con 'pdf_file' (Path) y 'info' (bool).
@@ -129,11 +112,7 @@ def _cmd_upload(args: argparse.Namespace) -> int:
 
 
 def _cmd_list(_args: argparse.Namespace) -> int:
-    """Lista todos los PDFs persistidos en el servidor.
-
-    Returns:
-        Código de salida (0 = éxito, 1 = error).
-    """
+    """Lista todos los PDFs persistidos en el servidor."""
     try:
         response = httpx.get(_API_PDFS, verify=_VERIFY)
         response.raise_for_status()
@@ -159,14 +138,7 @@ def _cmd_list(_args: argparse.Namespace) -> int:
 
 
 def _cmd_get(args: argparse.Namespace) -> int:
-    """Muestra el texto extraído de un PDF por su ID.
-
-    Args:
-        args: Namespace con 'pdf_id' (str).
-
-    Returns:
-        Código de salida (0 = éxito, 1 = error).
-    """
+    """Muestra el texto extraído de un PDF por su ID."""
     try:
         response = httpx.get(_pdf_url(args.pdf_id, "/text"), verify=_VERIFY)
 
@@ -190,14 +162,7 @@ def _cmd_get(args: argparse.Namespace) -> int:
 
 
 def _cmd_delete(args: argparse.Namespace) -> int:
-    """Elimina un PDF por su ID.
-
-    Args:
-        args: Namespace con 'pdf_id' (str).
-
-    Returns:
-        Código de salida (0 = éxito, 1 = error).
-    """
+    """Elimina un PDF por su ID."""
     try:
         response = httpx.delete(_pdf_url(args.pdf_id), verify=_VERIFY)
 
@@ -213,14 +178,7 @@ def _cmd_delete(args: argparse.Namespace) -> int:
         return _report_connection_error()
 
 def _cmd_download(args: argparse.Namespace) -> int:
-    """Descarga el texto extraído de un PDF y lo guarda en disco.
-
-    Args:
-        args: Namespace con 'pdf_id' (str) y 'output' (Path | None).
-
-    Returns:
-        Código de salida (0 = éxito, 1 = error).
-    """
+    """Descarga el texto extraído de un PDF y lo guarda en disco."""
     try:
         response = httpx.get(_pdf_url(args.pdf_id, "/download"), verify=_VERIFY)
 
@@ -260,9 +218,6 @@ def _parse_arguments() -> argparse.Namespace:
         list    → GET    /api/pdfs
         get     → GET    /api/pdfs/{id}/text
         delete  → DELETE /api/pdfs/{id}
-
-    Returns:
-        Namespace con el subcomando seleccionado y sus argumentos.
     """
     parser = argparse.ArgumentParser(
         prog="fast-pdf",

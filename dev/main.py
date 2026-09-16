@@ -1,8 +1,5 @@
 """Entry-point CLI para fast-pdf.
 
-Este módulo actúa como punto de entrada principal para la aplicación,
-delegrando al CLI del cliente.
-
 Uso: fast-pdf archivo.pdf
 """
 

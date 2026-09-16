@@ -1,9 +1,7 @@
 """Lógica de negocio para operaciones sobre PDFs.
 
 Este módulo contiene la lógica pura sin conocimiento de HTTP ni de la
-tecnología de persistencia concreta: opera contra el puerto `PdfRepository`,
-que recibe como parámetro. Es stateless y reutilizable tanto desde la API
-REST como desde un CLI.
+tecnología de persistencia concreta.
 """
 
 from dev.models.pdf_document import PdfDocument
@@ -18,11 +16,7 @@ from dev.servers.services.pdf_validator import (
 
 
 async def get_pdf(repository: PdfRepository, pdf_id: str) -> PdfDocument:
-    """Obtiene un PDF por ID o lanza PdfNotFoundError si no existe.
-
-    Este es el único punto de traducción de "PDF no encontrado".
-    Todos los métodos que consultan por ID usan este helper.
-    """
+    """Obtiene un PDF por ID o lanza PdfNotFoundError si no existe."""
     pdf = await repository.get_by_id(pdf_id)
     if pdf is None:
         raise PdfNotFoundError(f"No existe un PDF con ID {pdf_id}")
