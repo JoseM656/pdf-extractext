@@ -11,7 +11,7 @@ from dev.servers.services.pdf_extractor import (
     PdfExtractionError,
 )
 from dev.servers.services.pdf_validator import (
-    PdfValidationError,
+    DuplicatePdfError,
     PdfValidationError
 )
 from fastapi.responses import PlainTextResponse
