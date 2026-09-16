@@ -9,12 +9,10 @@ from dev.servers.dependencies import get_repository
 from dev.servers.services.pdf_extractor import (
     EmptyPdfError,
     PdfExtractionError,
-    PdfExtractor,
 )
 from dev.servers.services.pdf_validator import (
-    PdfValidationError,
-    calculate_checksum,
-    validate_pdf_bytes,
+    DuplicatePdfError,
+    PdfValidationError
 )
 from fastapi.responses import PlainTextResponse
 
@@ -51,52 +49,38 @@ async def create_pdf(
 ):
     """Sube un archivo PDF, lo valida, extrae su texto y lo registra en la base de datos.
 
-    El archivo NO se persiste en disco en ningún momento: se lee a memoria,
-    se valida, se extrae el texto y solo ese resultado se guarda en MongoDB.
-    Retorna HTTP 409 si el contenido del archivo ya fue subido anteriormente.
+    El archivo NO se persiste en disco en ningún momento: se lee a memoria
+    y se le pasa directamente a `pdf_controller.submit_pdf`, que orquesta
+    todo el flujo (validar, checksum, duplicados, extracción, persistencia).
+    Este endpoint solo traduce la entrada HTTP y, si algo falla, traduce
+    la excepción de negocio correspondiente al código de estado HTTP.
+
     """
     # Leer el contenido completo en memoria de una sola vez.
     content: bytes = await file.read()
 
     # Validar formato real (magic bytes %PDF-) y tamaño máximo.
     try:
-        validate_pdf_bytes(content, file.filename or "")
+        pdf = await pdf_controller.submit_pdf(
+            repository,
+            content=content,
+            filename=file.filename or "",
+            title=title,
+            description=description,
+        )
     except PdfValidationError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-    # Calcular el checksum SHA-256 del contenido binario.
-    checksum = calculate_checksum(content)
-
-    # Verificar duplicado antes de cualquier procesamiento costoso.
-    # Si el checksum ya existe en la base de datos, el archivo fue subido antes.
-    existing = await pdf_controller.get_pdf_by_checksum(repository, checksum)
-    if existing is not None:
+    except DuplicatePdfError as e:
         raise HTTPException(
             status_code=409,
             detail={
                 "message": "Este documento ya fue subido anteriormente.",
-                "existing_id": str(existing.id),
+                "existing_id": e.existing_id,
             },
         )
-
-    # Extraer el texto mientras los bytes están en memoria.
-    extractor = PdfExtractor()
-    try:
-        extracted_text = extractor.extract_text(content)
     except (PdfExtractionError, EmptyPdfError) as e:
         raise HTTPException(status_code=422, detail=str(e))
-
-    used_title = title or file.filename
-    size = len(content)
-
-    pdf = await pdf_controller.create_pdf(
-        repository,
-        title=used_title,
-        description=description,
-        size=size,
-        extracted_text=extracted_text,
-        checksum=checksum,
-    )
+ 
     return _to_response(pdf)
 
 
