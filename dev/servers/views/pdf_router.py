@@ -47,15 +47,7 @@ async def create_pdf(
     title: str = Form(""),
     description: str | None = Form(None),
 ):
-    """Sube un archivo PDF, lo valida, extrae su texto y lo registra en la base de datos.
-
-    El archivo NO se persiste en disco en ningún momento: se lee a memoria
-    y se le pasa directamente a `pdf_controller.submit_pdf`, que orquesta
-    todo el flujo (validar, checksum, duplicados, extracción, persistencia).
-    Este endpoint solo traduce la entrada HTTP y, si algo falla, traduce
-    la excepción de negocio correspondiente al código de estado HTTP.
-
-    """
+    """Sube un archivo PDF, lo valida, extrae su texto y lo registra en la base de datos."""
     # Leer el contenido completo en memoria de una sola vez.
     content: bytes = await file.read()
 
